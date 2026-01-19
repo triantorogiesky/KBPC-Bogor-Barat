@@ -11,51 +11,75 @@ import BeltLevels from './views/BeltLevels';
 import Profile from './views/Profile';
 import Branches from './views/Branches';
 
-// Fix: Implemented LoginView component
-const LoginView: React.FC<{ onLogin: (u: string) => void; onForgotPassword: () => void; onRegister: () => void }> = ({ onLogin, onForgotPassword, onRegister }) => {
-  const [username, setUsername] = useState('');
+const LoginView: React.FC<{ onLogin: (u: string, p: string) => void; onForgotPassword: () => void; onRegister: () => void }> = ({ onLogin, onForgotPassword, onRegister }) => {
+  const [username, setUsername] = useState('admin');
+  const [password, setPassword] = useState('password');
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 p-4">
-      <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-xl w-full max-w-md border border-slate-200 dark:border-slate-700">
-        <div className="text-center mb-8">
-          <img src={LOGO_URL} alt="Logo" className="w-16 h-16 mx-auto mb-4" />
-          <h1 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">Login KBPC</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm">Masuk ke sistem database Cimande</p>
+      <div className="bg-white dark:bg-slate-800 p-10 rounded-[2.5rem] shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in duration-500">
+        <div className="text-center mb-10">
+          <div className="w-20 h-20 bg-white rounded-3xl mx-auto flex items-center justify-center shadow-lg mb-6 border border-slate-100 overflow-hidden">
+             <img src={LOGO_URL} alt="Logo" className="w-16 h-16 object-contain" />
+          </div>
+          <h1 className="text-3xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">Login System</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-widest mt-2">Database Padjadjaran Cimande</p>
         </div>
-        <form onSubmit={(e) => { e.preventDefault(); onLogin(username); }} className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Username</label>
+        
+        <form onSubmit={(e) => { e.preventDefault(); onLogin(username, password); }} className="space-y-6">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Username / NIA</label>
             <input 
               type="text" 
-              className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-700 border dark:border-slate-600 dark:text-white rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 font-bold" 
+              className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 dark:text-white rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 font-bold transition-all" 
+              placeholder="Masukkan username"
               value={username} 
               onChange={(e) => setUsername(e.target.value)} 
               required
             />
           </div>
-          <button type="submit" className="w-full py-4 bg-indigo-600 text-white font-black rounded-2xl shadow-xl shadow-indigo-500/30 uppercase tracking-widest text-xs hover:bg-indigo-700 transition-all">Masuk</button>
+
+          <div className="space-y-1.5">
+            <div className="flex justify-between items-center ml-1">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kata Sandi</label>
+              <button type="button" onClick={onForgotPassword} className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase hover:underline">Lupa?</button>
+            </div>
+            <input 
+              type="password" 
+              className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 dark:text-white rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 font-bold transition-all" 
+              placeholder="••••••••"
+              value={password} 
+              onChange={(e) => setPassword(e.target.value)} 
+              required
+            />
+          </div>
+
+          <button type="submit" className="w-full py-5 bg-indigo-600 text-white font-black rounded-2xl shadow-xl shadow-indigo-500/30 uppercase tracking-[0.2em] text-xs hover:bg-indigo-700 transition-all active:scale-[0.98]">
+            Masuk Sekarang
+          </button>
         </form>
-        <div className="mt-8 flex flex-col gap-4 text-center">
-          <button onClick={onForgotPassword} className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline">Lupa Kata Sandi?</button>
-          <button onClick={onRegister} className="text-xs font-bold text-slate-500 dark:text-slate-400">Belum punya akun? <span className="text-indigo-600">Daftar Sekarang</span></button>
+
+        <div className="mt-10 text-center">
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+            Belum terdaftar? <button onClick={onRegister} className="text-indigo-600 dark:text-indigo-400 font-black hover:underline">Buat Akun Baru</button>
+          </p>
         </div>
       </div>
     </div>
   );
 };
 
-// Fix: Implemented ForgotPasswordView component
 const ForgotPasswordView: React.FC<{ onBack: () => void }> = ({ onBack }) => (
   <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 p-4 text-center">
-    <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-xl w-full max-w-md border border-slate-200 dark:border-slate-700">
-      <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter mb-4">Lupa Kata Sandi</h2>
-      <p className="text-slate-500 dark:text-slate-400 text-sm mb-8">Silakan hubungi Administrator Utama atau Sekretaris Cabang untuk mereset kata sandi Anda secara manual.</p>
-      <button onClick={onBack} className="w-full py-4 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-black rounded-2xl uppercase tracking-widest text-xs">Kembali ke Login</button>
+    <div className="bg-white dark:bg-slate-800 p-10 rounded-[2.5rem] shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-700">
+      <div className="w-20 h-20 bg-amber-50 dark:bg-amber-900/20 text-amber-500 rounded-3xl flex items-center justify-center text-4xl mx-auto mb-6">🔑</div>
+      <h2 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tighter mb-4">Reset Kata Sandi</h2>
+      <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-8 leading-relaxed">Silakan hubungi Administrator Utama (Sekretariat Pusat) untuk melakukan reset kata sandi manual melalui Panel Kontrol.</p>
+      <button onClick={onBack} className="w-full py-4 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-black rounded-2xl uppercase tracking-widest text-xs transition-all hover:bg-slate-200">Kembali ke Login</button>
     </div>
   </div>
 );
 
-// Fix: Implemented RegisterView component
 const RegisterView: React.FC<{ onBack: () => void; onRegister: (u: Partial<User>) => void; beltLevels: BeltLevel[]; branches: Branch[] }> = ({ onBack, onRegister }) => {
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
@@ -69,23 +93,25 @@ const RegisterView: React.FC<{ onBack: () => void; onRegister: (u: Partial<User>
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 p-4">
-      <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-xl w-full max-w-md border border-slate-200 dark:border-slate-700">
-        <h2 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tighter text-center mb-8">Registrasi Anggota</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="bg-white dark:bg-slate-800 p-10 rounded-[2.5rem] shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-700">
+        <h2 className="text-3xl font-black text-slate-800 dark:text-white uppercase tracking-tighter text-center mb-8">Registrasi Anggota</h2>
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-1">
-            <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Nama Lengkap</label>
-            <input required className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-700 border dark:border-slate-600 dark:text-white rounded-2xl outline-none" value={name} onChange={e => setName(e.target.value)} />
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nama Lengkap</label>
+            <input required className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-700 border dark:border-slate-600 dark:text-white rounded-2xl outline-none focus:border-indigo-500 font-bold" value={name} onChange={e => setName(e.target.value)} />
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Username</label>
-            <input required className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-700 border dark:border-slate-600 dark:text-white rounded-2xl outline-none" value={username} onChange={e => setUsername(e.target.value)} />
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Username / NIA</label>
+            <input required className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-700 border dark:border-slate-600 dark:text-white rounded-2xl outline-none focus:border-indigo-500 font-bold" value={username} onChange={e => setUsername(e.target.value)} />
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Email</label>
-            <input required type="email" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-700 border dark:border-slate-600 dark:text-white rounded-2xl outline-none" value={email} onChange={e => setEmail(e.target.value)} />
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Alamat Email</label>
+            <input required type="email" className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-700 border dark:border-slate-600 dark:text-white rounded-2xl outline-none focus:border-indigo-500 font-bold" value={email} onChange={e => setEmail(e.target.value)} />
           </div>
-          <button type="submit" className="w-full py-4 bg-indigo-600 text-white font-black rounded-2xl shadow-xl shadow-indigo-500/30 uppercase tracking-widest text-xs mt-4">Daftar Sekarang</button>
-          <button type="button" onClick={onBack} className="w-full py-4 text-slate-400 font-bold uppercase tracking-widest text-[10px]">Sudah punya akun? Login</button>
+          <div className="pt-4">
+             <button type="submit" className="w-full py-5 bg-indigo-600 text-white font-black rounded-2xl shadow-xl shadow-indigo-500/30 uppercase tracking-[0.2em] text-xs hover:bg-indigo-700 transition-all">Daftar Sekarang</button>
+             <button type="button" onClick={onBack} className="w-full py-4 text-slate-400 font-black uppercase tracking-widest text-[10px] mt-2">Sudah punya akun? Login</button>
+          </div>
         </form>
       </div>
     </div>
@@ -112,23 +138,16 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const initApp = async () => {
-      // 1. Ambil Konfigurasi dari Vercel Edge Config
       const config = await Database.initialize();
       setPositions(config.positions);
       setBeltLevels(config.beltLevels);
       setBranches(config.branches);
-
-      // 2. Ambil Data Anggota dari Local Storage
       setUsers(Database.getUsers());
-      
       setIsDataLoaded(true);
-      
-      // Beri sedikit delay untuk animasi loading yang smooth
       setTimeout(() => {
         setAuthState(prev => ({ ...prev, isLoading: false }));
       }, 800);
     };
-
     initApp();
   }, []);
 
@@ -148,13 +167,21 @@ const App: React.FC = () => {
     setTimeout(() => setNotifications(prev => prev.filter(n => n.id !== id)), 3000);
   };
 
-  const handleLogin = (username: string) => {
-    const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+  // Perbaikan handleLogin: Sekarang mengecek password juga
+  const handleLogin = (username: string, password: string) => {
+    const user = users.find(u => u.username.toLowerCase() === username.toLowerCase() || u.id.toLowerCase() === username.toLowerCase());
+    
     if (user) {
-      if (user.status === 'Pending') {
-        showNotification('Akun Anda masih menunggu verifikasi email.', 'info');
+      if (user.password && user.password !== password) {
+        showNotification('Kata sandi salah.', 'error');
         return;
       }
+      
+      if (user.status === 'Pending') {
+        showNotification('Akun Anda masih menunggu verifikasi.', 'info');
+        return;
+      }
+      
       setAuthState({ user, isAuthenticated: true, isLoading: false });
       showNotification(`Selamat datang, ${user.name}!`, 'success');
     } else {
@@ -166,6 +193,7 @@ const App: React.FC = () => {
     const newUser: User = {
       id: Database.generateNIA(),
       username: userData.username || 'user',
+      password: 'password', // Password default untuk registrasi baru
       name: userData.name || 'Anggota Baru',
       email: userData.email || '',
       role: userData.role || Role.ANGGOTA,
@@ -174,7 +202,7 @@ const App: React.FC = () => {
       status: userData.status || 'Active',
       avatar: `https://ui-avatars.com/api/?name=${userData.name}&background=random`,
       isCoach: userData.isCoach || false,
-      beltLevel: userData.beltLevel || beltLevels[0].name,
+      beltLevel: userData.beltLevel || (beltLevels[0] ? beltLevels[0].name : ''),
       predicate: userData.predicate || 'Baru',
       gender: userData.gender || 'Laki-laki',
       branch: userData.branch || (branches[0] ? branches[0].name : ''),
@@ -195,8 +223,7 @@ const App: React.FC = () => {
             </div>
           </div>
           <div className="text-center">
-            <p className="text-indigo-600 dark:text-indigo-400 font-black tracking-[0.3em] text-[10px] uppercase">Menghubungkan ke Edge Config</p>
-            <p className="text-slate-400 text-[8px] font-bold uppercase mt-2 tracking-widest">Sinkronisasi Data Global Vercel...</p>
+            <p className="text-indigo-600 dark:text-indigo-400 font-black tracking-[0.3em] text-[10px] uppercase">SINKRONISASI EDGE CONFIG</p>
           </div>
         </div>
       </div>
@@ -243,6 +270,25 @@ const App: React.FC = () => {
                 onUpdateBranch={(b) => { Database.saveBranch(b); setBranches(Database.getBranches()); Database.persistLocalConfig('branches', branches.map(x => x.id === b.id ? b : x)); }}
                 onDeleteBranch={(id) => { Database.deleteBranch(id); setBranches(Database.getBranches()); Database.persistLocalConfig('branches', branches.filter(x => x.id !== id)); }}
               />
+            )}
+            {activeTab === 'positions' && (
+              <Positions 
+                positions={positions} 
+                onAdd={(p) => { const updated = [...positions, p]; Database.persistLocalConfig('positions', updated); setPositions(updated); }}
+                onUpdate={(old, next) => { const updated = positions.map(p => p === old ? next : p); Database.persistLocalConfig('positions', updated); setPositions(updated); }}
+                onDelete={(p) => { const updated = positions.filter(item => item !== p); Database.persistLocalConfig('positions', updated); setPositions(updated); }} 
+              />
+            )}
+            {activeTab === 'belt-levels' && (
+              <BeltLevels 
+                beltLevels={beltLevels} 
+                onAdd={(b) => { const updated = [...beltLevels, b]; Database.persistLocalConfig('belt-levels', updated); setBeltLevels(updated); }}
+                onUpdate={(old, next) => { const updated = beltLevels.map(b => b.name === old ? next : b); Database.persistLocalConfig('belt-levels', updated); setBeltLevels(updated); }}
+                onDelete={(name) => { const updated = beltLevels.filter(b => b.name !== name); Database.persistLocalConfig('belt-levels', updated); setBeltLevels(updated); }} 
+              />
+            )}
+            {activeTab === 'profile' && authState.user && (
+              <Profile user={authState.user} onUpdate={(u) => { Database.saveUser(u); setUsers(Database.getUsers()); setAuthState(prev => ({ ...prev, user: u })); showNotification('Profil diperbarui.'); }} beltLevels={beltLevels} />
             )}
           </Layout>
        )}

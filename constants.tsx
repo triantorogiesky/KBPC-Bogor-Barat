@@ -1,7 +1,7 @@
 
 import { Role, User, BeltLevel, Branch } from './types';
 
-export const LOGO_URL = 'https://i.ibb.co/vz6Gz2N/kbpc-logo.png'; // Using the provided Padjadjaran Cimande logo
+export const LOGO_URL = 'https://i.ibb.co/vz6Gz2N/kbpc-logo.png';
 
 export const INITIAL_BELT_LEVELS: BeltLevel[] = [
   { name: 'Dasar', color: '#cbd5e1', predicate: 'Budaya' },
@@ -43,6 +43,7 @@ export const INITIAL_USERS: User[] = [
   {
     id: 'admin-001',
     username: 'admin',
+    password: 'password', // Ditambahkan
     name: 'Administrator Utama',
     email: 'admin@kbpcbogor.com',
     role: Role.ADMIN,
@@ -56,12 +57,13 @@ export const INITIAL_USERS: User[] = [
     gender: 'Laki-laki',
     branch: 'Bogor Barat',
     subBranch: 'Bubulak',
-    formalPhoto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=600&auto=format&fit=crop', // Sample formal photo
-    informalPhoto: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=600&auto=format&fit=crop'  // Sample informal photo
+    formalPhoto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=600&auto=format&fit=crop',
+    informalPhoto: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=600&auto=format&fit=crop'
   },
   {
     id: '1',
     username: 'budi_s',
+    password: 'password', // Ditambahkan
     name: 'Budi Santoso',
     email: 'budi@kbpcbogor.com',
     role: Role.ADMIN,
@@ -79,6 +81,7 @@ export const INITIAL_USERS: User[] = [
   {
     id: '2',
     username: 'sari_w',
+    password: 'password', // Ditambahkan
     name: 'Sari Wijaya',
     email: 'sari@kbpcbogor.com',
     role: Role.PENGURUS,

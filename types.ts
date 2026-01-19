@@ -27,6 +27,7 @@ export interface Branch {
 export interface User {
   id: string;
   username: string;
+  password?: string; // Field baru untuk autentikasi
   name: string;
   email: string;
   role: Role;
