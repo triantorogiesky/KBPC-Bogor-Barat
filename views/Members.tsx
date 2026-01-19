@@ -247,7 +247,7 @@ const Members: React.FC<MembersProps> = ({
           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-indigo-600 transition-colors">🔍</span>
           <input
             type="text"
-            placeholder="Cari anggota berdasarkan nama, jabatan, cabang, atau sabuk..."
+            placeholder="Cari anggota berdasarkan nama, jabatan, cabang, NIA, atau sabuk..."
             className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 dark:text-white rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 text-sm transition-all font-medium"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -291,7 +291,7 @@ const Members: React.FC<MembersProps> = ({
                                     <span className="px-1.5 py-0.5 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-[8px] font-black rounded border border-amber-200 dark:border-amber-800 uppercase tracking-tighter">PELATIH</span>
                                 )}
                             </div>
-                            <p className="text-[10px] text-indigo-500 dark:text-indigo-400 font-bold uppercase tracking-wider">@{user.username}</p>
+                            <p className="text-[10px] text-indigo-500 dark:text-indigo-400 font-bold uppercase tracking-wider">NIA: {user.id.toUpperCase()}</p>
                           </div>
                         </div>
                       </td>
@@ -349,7 +349,7 @@ const Members: React.FC<MembersProps> = ({
                    <img src={user.avatar} className="w-24 h-24 rounded-[2rem] object-cover border-4 border-slate-50 dark:border-slate-700 shadow-xl" />
                    <div>
                       <h3 className="font-black text-slate-800 dark:text-white uppercase tracking-tighter leading-none mb-1">{user.name}</h3>
-                      <p className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-[0.2em]">@{user.username}</p>
+                      <p className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-[0.2em]">NIA: {user.id.toUpperCase()}</p>
                    </div>
                    <div className="w-full py-2 px-3 rounded-2xl border dark:border-slate-700 flex flex-col items-center" style={{ backgroundColor: style.bgOpacity }}>
                       <span className="text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-100" style={style.textColor ? { color: style.textColor } : {}}>{user.beltLevel}</span>
@@ -528,85 +528,189 @@ const Members: React.FC<MembersProps> = ({
         </div>
       )}
 
-      {/* --- DETAIL VIEW MODAL --- */}
+      {/* --- IMPROVED DETAIL VIEW MODAL --- */}
       {isDetailOpen && viewingUser && (() => {
         const style = getBeltStyle(viewingUser.beltLevel);
+        const statusColors = {
+          Active: 'bg-emerald-500',
+          Pending: 'bg-amber-500',
+          Inactive: 'bg-slate-400'
+        };
+
         return (
-          <div className="fixed inset-0 z-[65] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="bg-white dark:bg-slate-800 w-full max-w-3xl rounded-[3rem] shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto custom-scrollbar">
-              <div className="h-40 bg-indigo-600 relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-transparent"></div>
-                <button onClick={closeModal} className="absolute top-6 right-6 w-10 h-10 bg-black/20 hover:bg-black/40 text-white rounded-full flex items-center justify-center transition-colors z-10">✕</button>
-                {viewingUser.isCoach && (
-                  <div className="absolute top-6 left-6 px-3 py-1 bg-amber-500 text-white text-[10px] font-black rounded-full border border-amber-400 shadow-sm flex items-center gap-1">
-                    <span>⭐</span> PELATIH TERVERIFIKASI
+          <div className="fixed inset-0 z-[65] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-md animate-in fade-in duration-300">
+            <div className="bg-white dark:bg-slate-800 w-full max-w-4xl rounded-[3rem] shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-in zoom-in-95 duration-300 max-h-[95vh] overflow-y-auto custom-scrollbar flex flex-col">
+              
+              {/* Profile Header Banner */}
+              <div className="h-48 bg-gradient-to-br from-indigo-600 via-indigo-700 to-slate-900 relative shrink-0">
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
+                <button onClick={closeModal} className="absolute top-6 right-6 w-12 h-12 bg-white/10 hover:bg-white/30 text-white rounded-2xl flex items-center justify-center transition-all z-10 backdrop-blur-md border border-white/20">
+                  <span className="text-xl">✕</span>
+                </button>
+                
+                <div className="absolute -bottom-16 left-12 flex items-end gap-6">
+                  <div className="relative">
+                    <img src={viewingUser.avatar} className="w-40 h-40 rounded-[3rem] border-[10px] border-white dark:border-slate-800 shadow-2xl object-cover bg-slate-100" />
+                    <div className={`absolute bottom-3 right-3 w-6 h-6 rounded-full border-4 border-white dark:border-slate-800 ${statusColors[viewingUser.status]}`}></div>
                   </div>
-                )}
-              </div>
-              <div className="px-10 pb-10">
-                <div className="relative -mt-16 flex justify-center mb-6">
-                  <img src={viewingUser.avatar} className="w-32 h-32 rounded-[2.5rem] border-8 border-white dark:border-slate-800 shadow-xl object-cover" />
+                  <div className="pb-4 space-y-1">
+                    <h2 className="text-3xl font-black text-white uppercase tracking-tighter leading-none">{viewingUser.name}</h2>
+                    <p className="text-indigo-200 font-bold uppercase tracking-[0.2em] text-xs">@{viewingUser.username} • {viewingUser.gender}</p>
+                  </div>
                 </div>
-                <div className="text-center space-y-4">
-                  <div>
-                    <h2 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tighter leading-none">{viewingUser.name}</h2>
-                    <p className="text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-widest text-xs mt-1">@{viewingUser.username} • {viewingUser.gender}</p>
+
+                <div className="absolute top-8 left-8 flex flex-wrap gap-2">
+                  {viewingUser.isCoach && (
+                    <div className="px-4 py-1.5 bg-amber-500 text-white text-[10px] font-black rounded-full border border-amber-400 shadow-xl flex items-center gap-2 animate-pulse">
+                      <span>⭐</span> PELATIH TERVERIFIKASI
+                    </div>
+                  )}
+                  <div className={`px-4 py-1.5 text-white text-[10px] font-black rounded-full border border-white/20 shadow-xl flex items-center gap-2 backdrop-blur-md ${statusColors[viewingUser.status]}`}>
+                    {viewingUser.status.toUpperCase()}
                   </div>
+                </div>
+              </div>
+
+              {/* Main Data Content */}
+              <div className="p-12 pt-24 grid grid-cols-1 lg:grid-cols-12 gap-12">
+                
+                {/* Left Column: Essential Data */}
+                <div className="lg:col-span-7 space-y-10">
                   
-                  {/* Badge Row */}
-                  <div className="flex flex-wrap justify-center gap-2">
-                    <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 rounded-xl text-[10px] font-black uppercase tracking-widest border border-indigo-100 dark:border-indigo-800">
-                      {viewingUser.position}
-                    </span>
-                    <div className="flex items-center overflow-hidden rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm" style={{ backgroundColor: style.bgOpacity }}>
-                      <div className="w-2 self-stretch" style={{ backgroundColor: style.beltColor }}></div>
-                      <div className="px-3 py-1 flex flex-col items-start">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-200" style={style.textColor ? { color: style.textColor } : {}}>{viewingUser.beltLevel}</span>
-                        <span className="text-[8px] font-black text-indigo-600 dark:text-indigo-400 leading-none mt-0.5">📜 {style.predicate}</span>
-                      </div>
+                  {/* Identity Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-6 bg-slate-50 dark:bg-slate-900/40 rounded-[2rem] border border-slate-100 dark:border-slate-700">
+                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Nomor Induk Anggota (NIA)</p>
+                       <p className="text-lg font-mono font-black text-slate-800 dark:text-white uppercase">{viewingUser.id.toUpperCase()}</p>
+                    </div>
+                    <div className="p-6 bg-slate-50 dark:bg-slate-900/40 rounded-[2rem] border border-slate-100 dark:border-slate-700">
+                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Tingkat Sabuk</p>
+                       <div className="flex items-center gap-3">
+                         <div className="w-8 h-3 rounded shadow-sm" style={{ backgroundColor: style.beltColor }}></div>
+                         <p className="text-md font-black text-slate-800 dark:text-white uppercase" style={style.textColor ? { color: style.textColor } : {}}>
+                            {viewingUser.beltLevel}
+                         </p>
+                       </div>
+                       <p className="text-[9px] font-black text-indigo-500 uppercase mt-1">Predikat: {style.predicate}</p>
                     </div>
                   </div>
 
-                  {/* Documentation Photos Section */}
-                  <div className="mt-10 space-y-4 text-left">
-                     <h3 className="text-[11px] font-black text-slate-800 dark:text-white uppercase tracking-[0.3em] flex items-center gap-3">
-                        <span className="w-10 h-[2px] bg-indigo-600"></span> DOKUMENTASI PROFIL
-                     </h3>
-                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <div className="aspect-[3/4] rounded-[2rem] overflow-hidden bg-slate-100 dark:bg-slate-700 border-4 border-white dark:border-slate-800 shadow-xl group relative">
-                           {viewingUser.formalPhoto ? (
-                              <img src={viewingUser.formalPhoto} className="w-full h-full object-cover" alt="Foto Formal" />
-                           ) : (
-                              <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-2">
-                                 <span className="text-5xl">🧥</span>
-                                 <p className="text-[10px] font-black uppercase tracking-widest opacity-50">Belum Ada Foto Formal</p>
-                              </div>
-                           )}
-                           <div className="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-black/60 to-transparent">
-                              <p className="text-white text-[10px] font-black uppercase text-center tracking-widest">FOTO FORMAL</p>
-                           </div>
-                        </div>
-                        <div className="aspect-[3/4] rounded-[2rem] overflow-hidden bg-slate-100 dark:bg-slate-700 border-4 border-white dark:border-slate-800 shadow-xl group relative">
-                           {viewingUser.informalPhoto ? (
-                              <img src={viewingUser.informalPhoto} className="w-full h-full object-cover" alt="Foto Non-Formal" />
-                           ) : (
-                              <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-2">
-                                 <span className="text-5xl">👕</span>
-                                 <p className="text-[10px] font-black uppercase tracking-widest opacity-50">Belum Ada Foto Bebas</p>
-                              </div>
-                           )}
-                           <div className="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-black/60 to-transparent">
-                              <p className="text-white text-[10px] font-black uppercase text-center tracking-widest">FOTO NON-FORMAL</p>
-                           </div>
-                        </div>
-                     </div>
+                  {/* Organization & Meta */}
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-[0.3em] flex items-center gap-3">
+                        <span className="w-10 h-[2px] bg-indigo-600"></span> INFORMASI KEANGGOTAAN
+                    </h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                       <div className="p-6 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-3xl shadow-sm flex items-center gap-4">
+                          <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-950 rounded-2xl flex items-center justify-center text-2xl">🏢</div>
+                          <div>
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Wilayah / Cabang</p>
+                            <p className="text-sm font-black text-slate-700 dark:text-slate-200 uppercase">{viewingUser.branch}</p>
+                          </div>
+                       </div>
+                       <div className="p-6 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-3xl shadow-sm flex items-center gap-4">
+                          <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-950 rounded-2xl flex items-center justify-center text-2xl">📍</div>
+                          <div>
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Unit / Ranting</p>
+                            <p className="text-sm font-black text-slate-700 dark:text-slate-200 uppercase">{viewingUser.subBranch || 'PUSAT'}</p>
+                          </div>
+                       </div>
+                       <div className="p-6 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-3xl shadow-sm flex items-center gap-4">
+                          <div className="w-12 h-12 bg-amber-50 dark:bg-amber-950 rounded-2xl flex items-center justify-center text-2xl">🏷️</div>
+                          <div>
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Jabatan Struktur</p>
+                            <p className="text-sm font-black text-indigo-600 dark:text-indigo-400 uppercase">{viewingUser.position}</p>
+                          </div>
+                       </div>
+                       <div className="p-6 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-3xl shadow-sm flex items-center gap-4">
+                          <div className="w-12 h-12 bg-purple-50 dark:bg-purple-950 rounded-2xl flex items-center justify-center text-2xl">📅</div>
+                          <div>
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Tanggal Bergabung</p>
+                            <p className="text-sm font-black text-slate-700 dark:text-slate-200 uppercase">{viewingUser.joinDate}</p>
+                          </div>
+                       </div>
+                    </div>
                   </div>
 
-                  <div className="flex gap-3 mt-10">
-                    <button onClick={() => { closeModal(); openModal(viewingUser); }} className="flex-1 py-4 bg-indigo-600 text-white font-black rounded-2xl uppercase tracking-widest text-xs shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 transition-all active:scale-95">Edit Profil Lengkap</button>
-                    <button onClick={closeModal} className="px-8 py-4 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-black rounded-2xl uppercase tracking-widest text-xs">Tutup</button>
+                  {/* Contact Info */}
+                  <div className="p-6 bg-indigo-50 dark:bg-indigo-900/10 rounded-[2.5rem] border border-indigo-100 dark:border-indigo-900/30 flex flex-col md:flex-row justify-between items-center gap-4">
+                     <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-white dark:bg-slate-800 rounded-xl flex items-center justify-center text-lg shadow-sm">✉️</div>
+                        <div>
+                           <p className="text-[8px] font-black text-indigo-400 uppercase tracking-widest">Kontak Email Resmi</p>
+                           <p className="text-sm font-bold text-indigo-800 dark:text-indigo-300">{viewingUser.email}</p>
+                        </div>
+                     </div>
+                     <button 
+                       onClick={() => { navigator.clipboard.writeText(viewingUser.email); showNotification('Email disalin ke clipboard'); }}
+                       className="px-6 py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/30"
+                     >
+                       Salin Email
+                     </button>
                   </div>
                 </div>
+
+                {/* Right Column: Photos & Documentation */}
+                <div className="lg:col-span-5 space-y-8">
+                  <h3 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-[0.3em] flex items-center gap-3">
+                        <span className="w-10 h-[2px] bg-indigo-600"></span> DOKUMENTASI PROFIL
+                  </h3>
+                  
+                  <div className="space-y-8">
+                    {/* Formal Photo Box */}
+                    <div className="space-y-3">
+                      <div className="aspect-[3/4] rounded-[3rem] overflow-hidden bg-slate-100 dark:bg-slate-700 border-8 border-white dark:border-slate-800 shadow-2xl relative group transition-transform hover:scale-[1.02]">
+                        {viewingUser.formalPhoto ? (
+                          <img src={viewingUser.formalPhoto} className="w-full h-full object-cover" alt="Foto Formal" />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-2">
+                            <span className="text-6xl opacity-30">🧥</span>
+                            <p className="text-[10px] font-black uppercase tracking-widest opacity-50">Belum Ada Foto Formal</p>
+                          </div>
+                        )}
+                        <div className="absolute bottom-0 inset-x-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
+                          <p className="text-white text-[11px] font-black uppercase text-center tracking-[0.2em]">Foto Formal (Seragam)</p>
+                        </div>
+                      </div>
+                      <p className="text-[10px] font-bold text-slate-400 text-center uppercase tracking-widest italic">Dokumentasi Administrasi Ijazah</p>
+                    </div>
+
+                    {/* Informal Photo Box */}
+                    <div className="space-y-3">
+                      <div className="aspect-[3/4] rounded-[3rem] overflow-hidden bg-slate-100 dark:bg-slate-700 border-8 border-white dark:border-slate-800 shadow-2xl relative group transition-transform hover:scale-[1.02]">
+                        {viewingUser.informalPhoto ? (
+                          <img src={viewingUser.informalPhoto} className="w-full h-full object-cover" alt="Foto Non-Formal" />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-2">
+                            <span className="text-6xl opacity-30">👕</span>
+                            <p className="text-[10px] font-black uppercase tracking-widest opacity-50">Belum Ada Foto Bebas</p>
+                          </div>
+                        )}
+                        <div className="absolute bottom-0 inset-x-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
+                          <p className="text-white text-[11px] font-black uppercase text-center tracking-[0.2em]">Foto Non-Formal (Bebas)</p>
+                        </div>
+                      </div>
+                      <p className="text-[10px] font-bold text-slate-400 text-center uppercase tracking-widest italic">Dokumentasi Arsip Kegiatan</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer Actions */}
+              <div className="p-10 border-t dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex flex-col sm:flex-row gap-4 shrink-0">
+                <button 
+                  onClick={() => { closeModal(); openModal(viewingUser); }} 
+                  className="flex-1 py-5 bg-indigo-600 text-white font-black rounded-2xl uppercase tracking-[0.2em] text-xs shadow-2xl shadow-indigo-500/40 hover:bg-indigo-700 transition-all active:scale-95 flex items-center justify-center gap-3"
+                >
+                  <span>✏️</span> Sunting Profil Lengkap
+                </button>
+                <button 
+                  onClick={closeModal} 
+                  className="px-12 py-5 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-black rounded-2xl uppercase tracking-[0.2em] text-xs border border-slate-200 dark:border-slate-700 hover:bg-slate-50 transition-all"
+                >
+                  Tutup Panel Detail
+                </button>
               </div>
             </div>
           </div>

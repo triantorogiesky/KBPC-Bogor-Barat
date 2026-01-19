@@ -9,7 +9,6 @@ import Positions from './views/Positions';
 import BeltLevels from './views/BeltLevels';
 import Profile from './views/Profile';
 import Branches from './views/Branches';
-import Certificates from './views/Certificates';
 
 const LoginView: React.FC<{ onLogin: (username: string) => void; onForgotPassword: () => void; onRegister: () => void }> = ({ onLogin, onForgotPassword, onRegister }) => {
   const [username, setUsername] = useState('admin');
@@ -496,12 +495,6 @@ const App: React.FC = () => {
             onUpdateUser={updateUser} 
             onDeleteUser={deleteUser} 
             showNotification={showNotification}
-          />
-        )}
-        {activeTab === 'certificates' && (
-          <Certificates 
-            users={users}
-            beltLevels={beltLevels}
           />
         )}
         {activeTab === 'branches' && (

@@ -39,7 +39,7 @@ const Certificates: React.FC<CertificatesProps> = ({ users, beltLevels }) => {
             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
             <input
               type="text"
-              placeholder="Cari anggota berdasarkan nama atau ID..."
+              placeholder="Cari anggota berdasarkan nama atau Nomor Induk (NIA)..."
               className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 dark:text-white rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 text-sm font-bold transition-all"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -62,7 +62,7 @@ const Certificates: React.FC<CertificatesProps> = ({ users, beltLevels }) => {
               <div className="min-w-0">
                 <p className="font-black text-xs uppercase truncate tracking-tighter">{user.name}</p>
                 <p className={`text-[10px] font-bold uppercase tracking-widest ${selectedUser?.id === user.id ? 'text-indigo-200' : 'text-slate-400'}`}>
-                  {user.beltLevel}
+                  NIA: {user.id.toUpperCase()}
                 </p>
               </div>
             </button>
@@ -109,7 +109,7 @@ const Certificates: React.FC<CertificatesProps> = ({ users, beltLevels }) => {
                       <h3 className="text-4xl font-black uppercase tracking-tight text-slate-900 border-b-2 border-slate-200 px-12 inline-block pb-2">
                         {selectedUser.name}
                       </h3>
-                      <p className="text-xs font-mono font-bold text-slate-400 mt-2">NOMOR REGISTRASI: {selectedUser.id.toUpperCase()}</p>
+                      <p className="text-xs font-mono font-bold text-slate-400 mt-2">NOMOR INDUK ANGGOTA (NIA): {selectedUser.id.toUpperCase()}</p>
                    </div>
 
                    <p className="text-sm font-medium leading-relaxed max-w-lg mx-auto">

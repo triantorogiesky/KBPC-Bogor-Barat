@@ -28,7 +28,6 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, activeView, s
   const navItems: NavItem[] = [
     { id: 'dashboard', label: 'Dashboard', icon: '📊', roles: [Role.ADMIN, Role.PENGURUS, Role.ANGGOTA] },
     { id: 'members', label: 'Anggota', icon: '👥', roles: [Role.ADMIN, Role.PENGURUS] },
-    { id: 'certificates', label: 'Cetak Ijazah', icon: '📜', roles: [Role.ADMIN, Role.PENGURUS] },
     { id: 'branches', label: 'Struktur Cabang', icon: '🏢', roles: [Role.ADMIN] },
     { 
       id: 'access-mgmt', 
