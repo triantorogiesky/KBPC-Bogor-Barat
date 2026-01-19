@@ -1,0 +1,7 @@
+{
+  "name": "DATABASE KBPC",
+  "description": "Aplikasi Pengelola Data Keluarga Besar Pdjadjaran Cimande",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
