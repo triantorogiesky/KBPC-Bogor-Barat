@@ -6,6 +6,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MemberHub - Manajemen Anggota</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        // You can add custom colors here if needed
+                    }
+                }
+            }
+        }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -16,6 +28,21 @@
             transition-property: background-color, border-color, color, fill, stroke;
             transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
             transition-duration: 300ms;
+        }
+        
+        /* Custom scrollbar for sidebar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.2);
+            border-radius: 10px;
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(71, 85, 105, 0.5);
         }
     </style>
 <script type="importmap">
@@ -30,7 +57,7 @@
 }
 </script>
 </head>
-<body class="bg-slate-50 text-slate-900">
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100 min-h-screen">
     <div id="root"></div>
 </body>
 </html>

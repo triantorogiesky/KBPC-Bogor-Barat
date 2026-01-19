@@ -1,106 +1,122 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { User, Role } from '../types';
-import { getMemberAnalytics } from '../geminiService';
+import { INITIAL_BELT_LEVELS } from '../constants';
 
 interface DashboardProps {
   users: User[];
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ users }) => {
-  const [aiInsight, setAiInsight] = useState<string | null>(null);
-  const [isLoadingAi, setIsLoadingAi] = useState(false);
-
   const stats = [
-    { label: 'Total Anggota', value: users.length, color: 'bg-blue-500', icon: '👥' },
-    { label: 'Admin', value: users.filter(u => u.role === Role.ADMIN).length, color: 'bg-purple-500', icon: '👑' },
-    { label: 'Pengurus', value: users.filter(u => u.role === Role.PENGURUS).length, color: 'bg-emerald-500', icon: '💼' },
-    { label: 'Aktif', value: users.filter(u => u.status === 'Active').length, color: 'bg-amber-500', icon: '✅' },
+    { label: 'Total Anggota', value: users.length, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20', icon: '👥' },
+    { label: 'Administrator', value: users.filter(u => u.role === Role.ADMIN).length, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20', icon: '👑' },
+    { label: 'Pengurus Cabang', value: users.filter(u => u.role === Role.PENGURUS).length, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20', icon: '💼' },
+    { label: 'Anggota Aktif', value: users.filter(u => u.status === 'Active').length, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20', icon: '✅' },
   ];
 
-  const fetchAiInsight = async () => {
-    setIsLoadingAi(true);
-    const result = await getMemberAnalytics(users);
-    setAiInsight(result);
-    setIsLoadingAi(false);
-  };
-
-  useEffect(() => {
-    fetchAiInsight();
-  }, []);
+  const beltDistribution = INITIAL_BELT_LEVELS.map(belt => ({
+    name: belt.name,
+    count: users.filter(u => u.beltLevel === belt.name).length,
+    percentage: users.length > 0 ? (users.filter(u => u.beltLevel === belt.name).length / users.length) * 100 : 0,
+    color: belt.color
+  })).sort((a, b) => b.count - a.count);
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4">
+    <div className="space-y-8 animate-in fade-in duration-700">
+      {/* Welcome Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Ringkasan Dashboard</h1>
-          <p className="text-slate-500 dark:text-slate-400">Selamat datang kembali di pusat manajemen data.</p>
+          <h1 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">Dashboard Overview</h1>
+          <p className="text-slate-500 dark:text-slate-400 font-medium">Selamat datang di panel kendali utama KBPC.</p>
         </div>
-        <div className="text-sm text-slate-400 dark:text-slate-500">
-          Terakhir diperbarui: {new Date().toLocaleDateString()}
+        <div className="flex gap-2">
+          <button onClick={() => window.print()} className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 transition-all flex items-center gap-2">
+            <span>🖨️</span> Cetak Laporan
+          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Main Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, idx) => (
-          <div key={idx} className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-4 transition-all hover:scale-[1.02]">
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white text-2xl ${stat.color}`}>
-              {stat.icon}
+          <div key={idx} className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all group">
+            <div className="flex justify-between items-start mb-4">
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl ${stat.bg}`}>
+                {stat.icon}
+              </div>
+              <span className="text-[10px] font-black text-slate-300 group-hover:text-indigo-400 transition-colors">LIVE</span>
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{stat.label}</p>
-              <p className="text-2xl font-bold text-slate-800 dark:text-white">{stat.value}</p>
+              <p className="text-2xl font-black text-slate-800 dark:text-white mb-1">{stat.value}</p>
+              <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{stat.label}</p>
             </div>
           </div>
         ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-indigo-50/30 dark:bg-indigo-900/10">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">✨</span>
-              <h2 className="font-bold text-slate-800 dark:text-white">AI Member Insights</h2>
+        <div className="lg:col-span-2 space-y-8">
+          {/* Belt Level Progress */}
+          <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm">
+            <h3 className="font-black text-slate-800 dark:text-white uppercase tracking-tighter mb-6 flex items-center gap-2">
+              <span className="text-xl">🥋</span> Distribusi Tingkatan Sabuk
+            </h3>
+            <div className="space-y-6">
+              {beltDistribution.map((belt, i) => (
+                <div key={i} className="space-y-2">
+                  <div className="flex justify-between items-end">
+                    <span className="text-xs font-bold text-slate-600 dark:text-slate-400">{belt.name}</span>
+                    <span className="text-xs font-black text-slate-800 dark:text-white">{belt.count} Jiwa ({belt.percentage.toFixed(0)}%)</span>
+                  </div>
+                  <div className="h-2 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full rounded-full transition-all duration-1000 ease-out"
+                      style={{ 
+                        width: `${belt.percentage}%`, 
+                        backgroundColor: belt.color === '#cbd5e1' ? '#94a3b8' : belt.color 
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              ))}
             </div>
-            <button
-              onClick={fetchAiInsight}
-              disabled={isLoadingAi}
-              className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 disabled:opacity-50"
-            >
-              {isLoadingAi ? 'Menganalisis...' : 'Refresh Analisis'}
-            </button>
-          </div>
-          <div className="p-6 text-slate-600 dark:text-slate-300 leading-relaxed min-h-[200px]">
-            {isLoadingAi ? (
-              <div className="flex flex-col items-center justify-center h-full space-y-4">
-                <div className="w-8 h-8 border-4 border-indigo-200 dark:border-indigo-900 border-t-indigo-600 rounded-full animate-spin"></div>
-                <p className="text-sm text-slate-400 dark:text-slate-500">Gemini sedang merangkum data anggota Anda...</p>
-              </div>
-            ) : (
-              <div className="prose dark:prose-invert prose-slate max-w-none whitespace-pre-wrap">
-                {aiInsight}
-              </div>
-            )}
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
-          <h2 className="font-bold text-slate-800 dark:text-white mb-4">Anggota Terbaru</h2>
-          <div className="space-y-4">
-            {users.slice(-5).reverse().map(user => (
-              <div key={user.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-                <img src={user.avatar} className="w-10 h-10 rounded-full border border-slate-100 dark:border-slate-600" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-slate-800 dark:text-white truncate">{user.name}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user.position}</p>
+        {/* Recent Activity / Members */}
+        <div className="space-y-8">
+           <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
+            <h2 className="font-black text-slate-800 dark:text-white uppercase tracking-tighter mb-6 flex items-center gap-2">
+              <span className="text-xl">🆕</span> Anggota Terbaru
+            </h2>
+            <div className="space-y-3">
+              {users.slice(-6).reverse().map(user => (
+                <div key={user.id} className="flex items-center gap-3 p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-all border border-transparent hover:border-slate-100 dark:hover:border-slate-600">
+                  <div className="relative">
+                    <img src={user.avatar} className="w-10 h-10 rounded-xl object-cover shadow-sm" alt={user.name} />
+                    {user.status === 'Active' && <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white dark:border-slate-800 rounded-full"></span>}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{user.name}</p>
+                    <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-black uppercase truncate">{user.position}</p>
+                  </div>
+                  <span className="text-[9px] text-slate-400 font-medium whitespace-nowrap">{user.joinDate}</span>
                 </div>
-                <span className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase shrink-0 ${
-                  user.status === 'Active' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                }`}>
-                  {user.status}
-                </span>
-              </div>
-            ))}
+              ))}
+            </div>
+            <button className="w-full mt-6 py-3 bg-slate-50 dark:bg-slate-700 text-xs font-black text-slate-500 dark:text-slate-400 rounded-xl hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors uppercase tracking-widest">
+              Lihat Semua Anggota
+            </button>
+          </div>
+
+          <div className="bg-indigo-600 rounded-3xl p-8 text-white shadow-xl shadow-indigo-500/30 relative overflow-hidden group">
+            <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700"></div>
+            <h3 className="text-xl font-black uppercase tracking-tighter mb-2">KBPC Cloud</h3>
+            <p className="text-indigo-100 text-xs font-medium leading-relaxed mb-6">Database aman dengan cadangan otomatis harian. Seluruh data Anda dienkripsi untuk privasi anggota.</p>
+            <button className="px-5 py-2.5 bg-white text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-50 transition-colors">
+              Unduh Backup
+            </button>
           </div>
         </div>
       </div>

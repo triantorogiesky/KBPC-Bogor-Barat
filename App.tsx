@@ -9,8 +9,7 @@ import Positions from './views/Positions';
 import BeltLevels from './views/BeltLevels';
 import Profile from './views/Profile';
 import Branches from './views/Branches';
-
-// --- Auth Views ---
+import Certificates from './views/Certificates';
 
 const LoginView: React.FC<{ onLogin: (username: string) => void; onForgotPassword: () => void; onRegister: () => void }> = ({ onLogin, onForgotPassword, onRegister }) => {
   const [username, setUsername] = useState('admin');
@@ -120,20 +119,18 @@ const RegisterView: React.FC<{ onBack: () => void; onRegister: (userData: Partia
   const [email, setEmail] = useState('');
   const [gender, setGender] = useState<'Laki-laki' | 'Perempuan'>('Laki-laki');
   const [branchName, setBranchName] = useState(branches[0]?.name || '');
-  const [subBranchName, setSubBranchName] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<Role>(Role.ANGGOTA);
   const [submitted, setSubmitted] = useState(false);
-
-  const availableSubs = branches.find(b => b.name === branchName)?.subBranches || [];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onRegister({ 
       name, username, email, gender, 
       branch: branchName, 
-      subBranch: subBranchName,
-      role, status: 'Pending', isCoach: false, 
+      subBranch: '', 
+      role: Role.ANGGOTA,
+      status: 'Pending', 
+      isCoach: false, 
       beltLevel: beltLevels[0]?.name || '', 
       predicate: 'Anggota Baru' 
     });
@@ -176,22 +173,10 @@ const RegisterView: React.FC<{ onBack: () => void; onRegister: (userData: Partia
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Cabang</label>
-                <select className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border dark:border-slate-600 dark:text-white rounded-xl outline-none font-bold" value={branchName} onChange={e => { setBranchName(e.target.value); setSubBranchName(''); }}>
+                <select className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border dark:border-slate-600 dark:text-white rounded-xl outline-none font-bold" value={branchName} onChange={e => setBranchName(e.target.value)}>
                   {branches.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
                 </select>
               </div>
-            </div>
-            <div className="space-y-1">
-                <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Ranting</label>
-                <select 
-                  disabled={availableSubs.length === 0}
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border dark:border-slate-600 dark:text-white rounded-xl outline-none disabled:opacity-50 font-bold" 
-                  value={subBranchName} 
-                  onChange={e => setSubBranchName(e.target.value)}
-                >
-                  <option value="">Pilih Ranting</option>
-                  {availableSubs.map(sb => <option key={sb.id} value={sb.name}>{sb.name}</option>)}
-                </select>
             </div>
             <div className="space-y-1">
               <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Username</label>
@@ -200,14 +185,6 @@ const RegisterView: React.FC<{ onBack: () => void; onRegister: (userData: Partia
             <div className="space-y-1">
               <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Email</label>
               <input required type="email" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border dark:border-slate-600 dark:text-white rounded-xl outline-none font-bold" placeholder="email@domain.com" value={email} onChange={e => setEmail(e.target.value)} />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Pilih Role</label>
-              <select className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border dark:border-slate-600 dark:text-white rounded-xl outline-none font-bold" value={role} onChange={e => setRole(e.target.value as Role)}>
-                <option value={Role.ANGGOTA}>Anggota</option>
-                <option value={Role.PENGURUS}>Pengurus</option>
-                <option value={Role.ADMIN}>Admin</option>
-              </select>
             </div>
             <div className="space-y-1">
               <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Password</label>
@@ -221,8 +198,6 @@ const RegisterView: React.FC<{ onBack: () => void; onRegister: (userData: Partia
     </div>
   );
 };
-
-// --- Main App ---
 
 const App: React.FC = () => {
   const [authState, setAuthState] = useState<AuthState>({
@@ -259,7 +234,6 @@ const App: React.FC = () => {
 
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
 
-  // Theme effect
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -286,7 +260,6 @@ const App: React.FC = () => {
     localStorage.setItem('mh_branches', JSON.stringify(branches));
   }, [branches]);
 
-  // Handle Loading
   useEffect(() => {
     const timer = setTimeout(() => {
       setAuthState(prev => ({ ...prev, isLoading: false }));
@@ -417,6 +390,16 @@ const App: React.FC = () => {
     showNotification('Jabatan baru ditambahkan.');
   };
 
+  const updatePosition = (oldPos: string, newPos: string) => {
+    if (oldPos !== newPos && positions.includes(newPos)) {
+      showNotification('Jabatan dengan nama tersebut sudah ada.', 'error');
+      return;
+    }
+    setPositions(positions.map(p => p === oldPos ? newPos : p));
+    setUsers(users.map(u => u.position === oldPos ? { ...u, position: newPos } : u));
+    showNotification('Jabatan berhasil diperbarui.', 'success');
+  };
+
   const deletePosition = (pos: string) => {
     const isUsed = users.some(u => u.position === pos);
     if (isUsed) {
@@ -515,6 +498,12 @@ const App: React.FC = () => {
             showNotification={showNotification}
           />
         )}
+        {activeTab === 'certificates' && (
+          <Certificates 
+            users={users}
+            beltLevels={beltLevels}
+          />
+        )}
         {activeTab === 'branches' && (
           <Branches 
             branches={branches}
@@ -527,7 +516,8 @@ const App: React.FC = () => {
         {activeTab === 'positions' && (
           <Positions 
             positions={positions} 
-            onAdd={addPosition} 
+            onAdd={addPosition}
+            onUpdate={updatePosition}
             onDelete={deletePosition} 
           />
         )}
@@ -583,7 +573,7 @@ const App: React.FC = () => {
         )}
       </div>
 
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 print:hidden">
         {notifications.map(n => (
           <div key={n.id} className={`px-6 py-4 rounded-xl shadow-lg border-l-4 text-white font-medium animate-in slide-in-from-right ${
             n.type === 'success' ? 'bg-emerald-500 border-emerald-700' :
