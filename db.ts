@@ -5,55 +5,63 @@ import { INITIAL_USERS, INITIAL_BELT_LEVELS, INITIAL_BRANCHES, POSITIONS } from 
 
 const KEYS = {
   USERS: 'kbpc_db_users',
+  BRANCHES: 'kbpc_db_branches',
+  POSITIONS: 'kbpc_db_positions',
+  BELTS: 'kbpc_db_belts',
   CONFIG_REMOTE: 'kbpc_global_config'
 };
 
-// Vercel Edge Config Client (akan menggunakan env VERCEL_URL & EDGE_CONFIG)
-// Catatan: Di client-side, kita memerlukan token pembacaan publik jika tidak menggunakan API routes.
+// Helper untuk LocalStorage
+const storage = {
+  get: <T>(key: string, defaultValue: T): T => {
+    try {
+      const item = localStorage.getItem(key);
+      return item ? JSON.parse(item) : defaultValue;
+    } catch {
+      return defaultValue;
+    }
+  },
+  set: (key: string, value: any): void => {
+    localStorage.setItem(key, JSON.stringify(value));
+  }
+};
+
 const edgeConfig = process.env.EDGE_CONFIG 
   ? createClient(process.env.EDGE_CONFIG) 
   : null;
 
 export const Database = {
-  // Inisialisasi Data dari Edge Config (Asynchronous)
+  // --- INITIALIZATION ---
   initialize: async () => {
+    // Simulasi latency jaringan
+    await new Promise(resolve => setTimeout(resolve, 1200));
+
+    let remoteConfig: any = null;
     try {
       if (edgeConfig) {
-        const remoteConfig = await edgeConfig.get(KEYS.CONFIG_REMOTE) as any;
-        if (remoteConfig) {
-          console.log("Database: Berhasil memuat konfigurasi dari Vercel Edge.");
-          return {
-            branches: remoteConfig.branches || INITIAL_BRANCHES,
-            positions: remoteConfig.positions || POSITIONS,
-            beltLevels: remoteConfig.beltLevels || INITIAL_BELT_LEVELS
-          };
-        }
+        remoteConfig = await edgeConfig.get(KEYS.CONFIG_REMOTE);
       }
     } catch (error) {
-      console.warn("Database: Edge Config tidak terjangkau, menggunakan data lokal.");
+      console.warn("Database: Edge Config unavailable, using local persistence.");
     }
-    
-    // Fallback ke localStorage jika ada override lokal, atau ke konstanta
-    const localBranches = localStorage.getItem('kbpc_db_branches');
-    const localPositions = localStorage.getItem('kbpc_db_positions');
-    const localBelts = localStorage.getItem('kbpc_db_belts');
 
-    return {
-      branches: localBranches ? JSON.parse(localBranches) : INITIAL_BRANCHES,
-      positions: localPositions ? JSON.parse(localPositions) : POSITIONS,
-      beltLevels: localBelts ? JSON.parse(localBelts) : INITIAL_BELT_LEVELS
-    };
+    // Ambil data dengan hierarki: 1. Remote Edge, 2. Local Storage, 3. Initial Constants
+    const branches = remoteConfig?.branches || storage.get(KEYS.BRANCHES, INITIAL_BRANCHES);
+    const positions = remoteConfig?.positions || storage.get(KEYS.POSITIONS, POSITIONS);
+    const beltLevels = remoteConfig?.beltLevels || storage.get(KEYS.BELTS, INITIAL_BELT_LEVELS);
+    const users = storage.get(KEYS.USERS, INITIAL_USERS);
+
+    // Pastikan data tersimpan di local untuk sesi berikutnya
+    storage.set(KEYS.BRANCHES, branches);
+    storage.set(KEYS.POSITIONS, positions);
+    storage.set(KEYS.BELTS, beltLevels);
+    storage.set(KEYS.USERS, users);
+
+    return { branches, positions, beltLevels, users };
   },
 
-  // --- USER OPERATIONS (Tetap di LocalStorage untuk Write Access) ---
-  getUsers: (): User[] => {
-    const data = localStorage.getItem(KEYS.USERS);
-    if (!data) {
-      localStorage.setItem(KEYS.USERS, JSON.stringify(INITIAL_USERS));
-      return INITIAL_USERS;
-    }
-    return JSON.parse(data);
-  },
+  // --- USER OPERATIONS ---
+  getUsers: (): User[] => storage.get(KEYS.USERS, INITIAL_USERS),
 
   saveUser: (user: User): void => {
     const users = Database.getUsers();
@@ -63,12 +71,12 @@ export const Database = {
     } else {
       users.push(user);
     }
-    localStorage.setItem(KEYS.USERS, JSON.stringify(users));
+    storage.set(KEYS.USERS, users);
   },
 
   deleteUser: (id: string): void => {
     const users = Database.getUsers().filter(u => u.id !== id);
-    localStorage.setItem(KEYS.USERS, JSON.stringify(users));
+    storage.set(KEYS.USERS, users);
   },
 
   generateNIA: (): string => {
@@ -78,39 +86,40 @@ export const Database = {
   },
 
   // --- BRANCH OPERATIONS ---
-  // Fix: Added missing getBranches method
-  getBranches: (): Branch[] => {
-    const data = localStorage.getItem('kbpc_db_branches');
-    if (!data) {
-      localStorage.setItem('kbpc_db_branches', JSON.stringify(INITIAL_BRANCHES));
-      return INITIAL_BRANCHES;
-    }
-    return JSON.parse(data);
-  },
+  getBranches: (): Branch[] => storage.get(KEYS.BRANCHES, INITIAL_BRANCHES),
 
-  // Fix: Added missing saveBranch method
   saveBranch: (branch: Branch): void => {
     const branches = Database.getBranches();
     const index = branches.findIndex(b => b.id === branch.id);
     if (index !== -1) {
       branches[index] = branch;
     } else {
-      if (!branch.id) {
-        branch.id = `br-${Math.random().toString(36).substr(2, 9)}`;
-      }
+      if (!branch.id) branch.id = `br-${Math.random().toString(36).substr(2, 9)}`;
       branches.push(branch);
     }
-    localStorage.setItem('kbpc_db_branches', JSON.stringify(branches));
+    storage.set(KEYS.BRANCHES, branches);
   },
 
-  // Fix: Added missing deleteBranch method
   deleteBranch: (id: string): void => {
     const branches = Database.getBranches().filter(b => b.id !== id);
-    localStorage.setItem('kbpc_db_branches', JSON.stringify(branches));
+    storage.set(KEYS.BRANCHES, branches);
   },
 
-  // --- LOCAL PERSISTENCE FOR CONFIG (Caching Edge Config) ---
+  // --- CONFIG PERSISTENCE (POSITIONS & BELTS) ---
+  savePositions: (positions: string[]): void => {
+    storage.set(KEYS.POSITIONS, positions);
+  },
+
+  saveBeltLevels: (belts: BeltLevel[]): void => {
+    storage.set(KEYS.BELTS, belts);
+  },
+
+  // Utility untuk sinkronisasi (Manual Sync)
   persistLocalConfig: (key: string, data: any) => {
-    localStorage.setItem(`kbpc_db_${key}`, JSON.stringify(data));
+    const storageKey = 
+      key === 'branches' ? KEYS.BRANCHES :
+      key === 'positions' ? KEYS.POSITIONS :
+      key === 'belt-levels' ? KEYS.BELTS : `kbpc_db_${key}`;
+    storage.set(storageKey, data);
   }
 };

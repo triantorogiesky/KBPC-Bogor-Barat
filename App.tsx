@@ -11,6 +11,8 @@ import BeltLevels from './views/BeltLevels';
 import Profile from './views/Profile';
 import Branches from './views/Branches';
 
+// --- VIEW COMPONENTS (Login, Forgot, Register) ---
+
 const LoginView: React.FC<{ onLogin: (u: string, p: string) => void; onForgotPassword: () => void; onRegister: () => void }> = ({ onLogin, onForgotPassword, onRegister }) => {
   const [username, setUsername] = useState('admin');
   const [password, setPassword] = useState('password');
@@ -118,6 +120,8 @@ const RegisterView: React.FC<{ onBack: () => void; onRegister: (u: Partial<User>
   );
 };
 
+// --- MAIN APP COMPONENT ---
+
 const App: React.FC = () => {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
@@ -142,11 +146,9 @@ const App: React.FC = () => {
       setPositions(config.positions);
       setBeltLevels(config.beltLevels);
       setBranches(config.branches);
-      setUsers(Database.getUsers());
+      setUsers(config.users);
       setIsDataLoaded(true);
-      setTimeout(() => {
-        setAuthState(prev => ({ ...prev, isLoading: false }));
-      }, 800);
+      setAuthState(prev => ({ ...prev, isLoading: false }));
     };
     initApp();
   }, []);
@@ -167,7 +169,6 @@ const App: React.FC = () => {
     setTimeout(() => setNotifications(prev => prev.filter(n => n.id !== id)), 3000);
   };
 
-  // Perbaikan handleLogin: Sekarang mengecek password juga
   const handleLogin = (username: string, password: string) => {
     const user = users.find(u => u.username.toLowerCase() === username.toLowerCase() || u.id.toLowerCase() === username.toLowerCase());
     
@@ -176,12 +177,10 @@ const App: React.FC = () => {
         showNotification('Kata sandi salah.', 'error');
         return;
       }
-      
       if (user.status === 'Pending') {
         showNotification('Akun Anda masih menunggu verifikasi.', 'info');
         return;
       }
-      
       setAuthState({ user, isAuthenticated: true, isLoading: false });
       showNotification(`Selamat datang, ${user.name}!`, 'success');
     } else {
@@ -193,19 +192,19 @@ const App: React.FC = () => {
     const newUser: User = {
       id: Database.generateNIA(),
       username: userData.username || 'user',
-      password: 'password', // Password default untuk registrasi baru
+      password: 'password',
       name: userData.name || 'Anggota Baru',
       email: userData.email || '',
       role: userData.role || Role.ANGGOTA,
-      position: userData.position || positions[0],
+      position: userData.position || (positions[0] || ''),
       joinDate: new Date().toISOString().split('T')[0],
       status: userData.status || 'Active',
       avatar: `https://ui-avatars.com/api/?name=${userData.name}&background=random`,
       isCoach: userData.isCoach || false,
-      beltLevel: userData.beltLevel || (beltLevels[0] ? beltLevels[0].name : ''),
+      beltLevel: userData.beltLevel || (beltLevels[0]?.name || ''),
       predicate: userData.predicate || 'Baru',
       gender: userData.gender || 'Laki-laki',
-      branch: userData.branch || (branches[0] ? branches[0].name : ''),
+      branch: userData.branch || (branches[0]?.name || ''),
       subBranch: userData.subBranch || ''
     };
     Database.saveUser(newUser);
@@ -223,7 +222,8 @@ const App: React.FC = () => {
             </div>
           </div>
           <div className="text-center">
-            <p className="text-indigo-600 dark:text-indigo-400 font-black tracking-[0.3em] text-[10px] uppercase">SINKRONISASI EDGE CONFIG</p>
+            <p className="text-indigo-600 dark:text-indigo-400 font-black tracking-[0.3em] text-[10px] uppercase">MENGHUBUNGKAN KE CLOUD</p>
+            <p className="text-slate-400 text-[8px] font-bold uppercase mt-2 tracking-widest">Sinkronisasi Database Vercel Edge...</p>
           </div>
         </div>
       </div>
@@ -266,25 +266,25 @@ const App: React.FC = () => {
               <Branches 
                 branches={branches}
                 users={users}
-                onAddBranch={(b) => { Database.saveBranch(b as Branch); setBranches(Database.getBranches()); Database.persistLocalConfig('branches', [...branches, b]); }}
-                onUpdateBranch={(b) => { Database.saveBranch(b); setBranches(Database.getBranches()); Database.persistLocalConfig('branches', branches.map(x => x.id === b.id ? b : x)); }}
-                onDeleteBranch={(id) => { Database.deleteBranch(id); setBranches(Database.getBranches()); Database.persistLocalConfig('branches', branches.filter(x => x.id !== id)); }}
+                onAddBranch={(b) => { Database.saveBranch(b as Branch); setBranches(Database.getBranches()); }}
+                onUpdateBranch={(b) => { Database.saveBranch(b); setBranches(Database.getBranches()); }}
+                onDeleteBranch={(id) => { Database.deleteBranch(id); setBranches(Database.getBranches()); }}
               />
             )}
             {activeTab === 'positions' && (
               <Positions 
                 positions={positions} 
-                onAdd={(p) => { const updated = [...positions, p]; Database.persistLocalConfig('positions', updated); setPositions(updated); }}
-                onUpdate={(old, next) => { const updated = positions.map(p => p === old ? next : p); Database.persistLocalConfig('positions', updated); setPositions(updated); }}
-                onDelete={(p) => { const updated = positions.filter(item => item !== p); Database.persistLocalConfig('positions', updated); setPositions(updated); }} 
+                onAdd={(p) => { const updated = [...positions, p]; Database.savePositions(updated); setPositions(updated); }}
+                onUpdate={(old, next) => { const updated = positions.map(p => p === old ? next : p); Database.savePositions(updated); setPositions(updated); }}
+                onDelete={(p) => { const updated = positions.filter(item => item !== p); Database.savePositions(updated); setPositions(updated); }} 
               />
             )}
             {activeTab === 'belt-levels' && (
               <BeltLevels 
                 beltLevels={beltLevels} 
-                onAdd={(b) => { const updated = [...beltLevels, b]; Database.persistLocalConfig('belt-levels', updated); setBeltLevels(updated); }}
-                onUpdate={(old, next) => { const updated = beltLevels.map(b => b.name === old ? next : b); Database.persistLocalConfig('belt-levels', updated); setBeltLevels(updated); }}
-                onDelete={(name) => { const updated = beltLevels.filter(b => b.name !== name); Database.persistLocalConfig('belt-levels', updated); setBeltLevels(updated); }} 
+                onAdd={(b) => { const updated = [...beltLevels, b]; Database.saveBeltLevels(updated); setBeltLevels(updated); }}
+                onUpdate={(old, next) => { const updated = beltLevels.map(b => b.name === old ? next : b); Database.saveBeltLevels(updated); setBeltLevels(updated); }}
+                onDelete={(name) => { const updated = beltLevels.filter(b => b.name !== name); Database.saveBeltLevels(updated); setBeltLevels(updated); }} 
               />
             )}
             {activeTab === 'profile' && authState.user && (
