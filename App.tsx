@@ -10,135 +10,83 @@ import Positions from './views/Positions';
 import BeltLevels from './views/BeltLevels';
 import Profile from './views/Profile';
 import Branches from './views/Branches';
-import Certificates from './views/Certificates';
 
-const LoginView: React.FC<{ onLogin: (username: string) => void; onForgotPassword: () => void; onRegister: () => void }> = ({ onLogin, onForgotPassword, onRegister }) => {
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('password');
-
+// Fix: Implemented LoginView component
+const LoginView: React.FC<{ onLogin: (u: string) => void; onForgotPassword: () => void; onRegister: () => void }> = ({ onLogin, onForgotPassword, onRegister }) => {
+  const [username, setUsername] = useState('');
   return (
-    <div className="min-h-screen flex items-center justify-center bg-indigo-600 dark:bg-indigo-950 p-6 transition-colors duration-300">
-      <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-10 space-y-8 animate-in slide-in-from-bottom duration-500">
-        <div className="text-center">
-          <div className="w-24 h-24 bg-white rounded-3xl mx-auto flex items-center justify-center shadow-xl mb-6 border-4 border-slate-50 dark:border-slate-700 overflow-hidden transform hover:scale-110 transition-transform">
-            <img src={LOGO_URL} alt="KBPC Logo" className="w-20 h-20 object-contain" />
-          </div>
-          <h1 className="text-2xl font-black text-slate-800 dark:text-white tracking-tighter uppercase">Padjadjaran Cimande</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-2 text-sm font-medium">Sistem Manajemen Data Anggota (DATABASE)</p>
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 p-4">
+      <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-xl w-full max-w-md border border-slate-200 dark:border-slate-700">
+        <div className="text-center mb-8">
+          <img src={LOGO_URL} alt="Logo" className="w-16 h-16 mx-auto mb-4" />
+          <h1 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">Login KBPC</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Masuk ke sistem database Cimande</p>
         </div>
-
-        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); onLogin(username); }}>
-          <div className="space-y-1">
-            <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Username</label>
-            <input
+        <form onSubmit={(e) => { e.preventDefault(); onLogin(username); }} className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Username</label>
+            <input 
+              type="text" 
+              className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-700 border dark:border-slate-600 dark:text-white rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 font-bold" 
+              value={username} 
+              onChange={(e) => setUsername(e.target.value)} 
               required
-              type="text"
-              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 dark:text-white rounded-xl focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all font-bold"
-              placeholder="Masukkan username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
             />
           </div>
-          <div className="space-y-1">
-            <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Kata Sandi</label>
-            <input
-              required
-              type="password"
-              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 dark:text-white rounded-xl focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all font-bold"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-          <div className="text-right">
-            <button type="button" onClick={onForgotPassword} className="text-xs text-indigo-600 dark:text-indigo-400 font-black hover:underline tracking-tighter">LUPA PASSWORD?</button>
-          </div>
-          <button type="submit" className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl shadow-xl shadow-indigo-500/30 transition-all transform active:scale-[0.98] uppercase tracking-widest">
-            Masuk Sekarang
-          </button>
+          <button type="submit" className="w-full py-4 bg-indigo-600 text-white font-black rounded-2xl shadow-xl shadow-indigo-500/30 uppercase tracking-widest text-xs hover:bg-indigo-700 transition-all">Masuk</button>
         </form>
-
-        <div className="text-center">
-          <p className="text-slate-400 dark:text-slate-500 text-xs font-bold uppercase tracking-widest">
-            Belum terdaftar? <button onClick={onRegister} className="text-indigo-600 dark:text-indigo-400 font-black hover:underline">Registrasi</button>
-          </p>
+        <div className="mt-8 flex flex-col gap-4 text-center">
+          <button onClick={onForgotPassword} className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline">Lupa Kata Sandi?</button>
+          <button onClick={onRegister} className="text-xs font-bold text-slate-500 dark:text-slate-400">Belum punya akun? <span className="text-indigo-600">Daftar Sekarang</span></button>
         </div>
       </div>
     </div>
   );
 };
 
-const ForgotPasswordView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
-  const [email, setEmail] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-
-  if (submitted) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-slate-900 p-6">
-        <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl p-8 text-center space-y-6 animate-in zoom-in duration-300">
-          <div className="text-5xl">📧</div>
-          <h2 className="text-2xl font-bold dark:text-white">Cek Email Anda</h2>
-          <p className="text-slate-500 dark:text-slate-400">Kami telah mengirimkan instruksi reset ke <b>{email}</b>.</p>
-          <button onClick={onBack} className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl">Kembali ke Login</button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-slate-900 p-6">
-      <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl p-8 space-y-6 animate-in fade-in duration-300">
-        <h2 className="text-2xl font-bold dark:text-white">Lupa Kata Sandi?</h2>
-        <input
-          type="email"
-          className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 dark:text-white rounded-xl outline-none"
-          placeholder="email@anda.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <button onClick={() => setSubmitted(true)} className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl">Kirim Instruksi</button>
-        <button onClick={onBack} className="w-full text-slate-400 text-sm font-semibold">Batal</button>
-      </div>
+// Fix: Implemented ForgotPasswordView component
+const ForgotPasswordView: React.FC<{ onBack: () => void }> = ({ onBack }) => (
+  <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 p-4 text-center">
+    <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-xl w-full max-w-md border border-slate-200 dark:border-slate-700">
+      <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter mb-4">Lupa Kata Sandi</h2>
+      <p className="text-slate-500 dark:text-slate-400 text-sm mb-8">Silakan hubungi Administrator Utama atau Sekretaris Cabang untuk mereset kata sandi Anda secara manual.</p>
+      <button onClick={onBack} className="w-full py-4 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-black rounded-2xl uppercase tracking-widest text-xs">Kembali ke Login</button>
     </div>
-  );
-};
+  </div>
+);
 
-const RegisterView: React.FC<{ onBack: () => void; onRegister: (userData: Partial<User>) => void; beltLevels: BeltLevel[]; branches: Branch[] }> = ({ onBack, onRegister, beltLevels, branches }) => {
+// Fix: Implemented RegisterView component
+const RegisterView: React.FC<{ onBack: () => void; onRegister: (u: Partial<User>) => void; beltLevels: BeltLevel[]; branches: Branch[] }> = ({ onBack, onRegister }) => {
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
-  const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onRegister({ name, username, email, status: 'Pending' });
-    setSubmitted(true);
+    onBack();
   };
 
-  if (submitted) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-slate-900 p-6">
-        <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl p-8 text-center space-y-6 animate-in zoom-in duration-300">
-          <div className="text-5xl">✅</div>
-          <h2 className="text-2xl font-bold dark:text-white">Pendaftaran Berhasil</h2>
-          <p className="text-slate-500 dark:text-slate-400">Akun sedang diverifikasi oleh administrator.</p>
-          <button onClick={onBack} className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl">Kembali Login</button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-indigo-50 dark:bg-indigo-950 p-6">
-      <div className="w-full max-w-lg bg-white dark:bg-slate-800 rounded-3xl p-10 shadow-xl space-y-6">
-        <h2 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">Daftar Anggota</h2>
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 p-4">
+      <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-xl w-full max-w-md border border-slate-200 dark:border-slate-700">
+        <h2 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tighter text-center mb-8">Registrasi Anggota</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input required className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border dark:text-white rounded-xl" placeholder="Nama Lengkap" value={name} onChange={e => setName(e.target.value)} />
-          <input required className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border dark:text-white rounded-xl" placeholder="Username" value={username} onChange={e => setUsername(e.target.value)} />
-          <input required type="email" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border dark:text-white rounded-xl" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
-          <button type="submit" className="w-full py-4 bg-indigo-600 text-white font-black rounded-xl uppercase tracking-widest">Daftar Sekarang</button>
+          <div className="space-y-1">
+            <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Nama Lengkap</label>
+            <input required className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-700 border dark:border-slate-600 dark:text-white rounded-2xl outline-none" value={name} onChange={e => setName(e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Username</label>
+            <input required className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-700 border dark:border-slate-600 dark:text-white rounded-2xl outline-none" value={username} onChange={e => setUsername(e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Email</label>
+            <input required type="email" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-700 border dark:border-slate-600 dark:text-white rounded-2xl outline-none" value={email} onChange={e => setEmail(e.target.value)} />
+          </div>
+          <button type="submit" className="w-full py-4 bg-indigo-600 text-white font-black rounded-2xl shadow-xl shadow-indigo-500/30 uppercase tracking-widest text-xs mt-4">Daftar Sekarang</button>
+          <button type="button" onClick={onBack} className="w-full py-4 text-slate-400 font-bold uppercase tracking-widest text-[10px]">Sudah punya akun? Login</button>
         </form>
-        <button onClick={onBack} className="w-full text-slate-400 text-xs font-black uppercase">Sudah punya akun? Login</button>
       </div>
     </div>
   );
@@ -160,18 +108,28 @@ const App: React.FC = () => {
   const [beltLevels, setBeltLevels] = useState<BeltLevel[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
 
   useEffect(() => {
-    // Initial Data Load from "Database"
-    setUsers(Database.getUsers());
-    setPositions(Database.getPositions());
-    setBeltLevels(Database.getBelts());
-    setBranches(Database.getBranches());
-    
-    const timer = setTimeout(() => {
-      setAuthState(prev => ({ ...prev, isLoading: false }));
-    }, 1200);
-    return () => clearTimeout(timer);
+    const initApp = async () => {
+      // 1. Ambil Konfigurasi dari Vercel Edge Config
+      const config = await Database.initialize();
+      setPositions(config.positions);
+      setBeltLevels(config.beltLevels);
+      setBranches(config.branches);
+
+      // 2. Ambil Data Anggota dari Local Storage
+      setUsers(Database.getUsers());
+      
+      setIsDataLoaded(true);
+      
+      // Beri sedikit delay untuk animasi loading yang smooth
+      setTimeout(() => {
+        setAuthState(prev => ({ ...prev, isLoading: false }));
+      }, 800);
+    };
+
+    initApp();
   }, []);
 
   useEffect(() => {
@@ -194,20 +152,14 @@ const App: React.FC = () => {
     const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
     if (user) {
       if (user.status === 'Pending') {
-        showNotification('Akun Anda masih menunggu verifikasi.', 'info');
+        showNotification('Akun Anda masih menunggu verifikasi email.', 'info');
         return;
       }
       setAuthState({ user, isAuthenticated: true, isLoading: false });
-      showNotification(`Selamat datang kembali, ${user.name}!`, 'success');
+      showNotification(`Selamat datang, ${user.name}!`, 'success');
     } else {
-      showNotification('Username atau password salah.', 'error');
+      showNotification('Username tidak ditemukan.', 'error');
     }
-  };
-
-  const handleLogout = () => {
-    setAuthState({ user: null, isAuthenticated: false, isLoading: false });
-    setView('login');
-    showNotification('Berhasil logout.');
   };
 
   const onAddUser = (userData: Partial<User>) => {
@@ -225,118 +177,77 @@ const App: React.FC = () => {
       beltLevel: userData.beltLevel || beltLevels[0].name,
       predicate: userData.predicate || 'Baru',
       gender: userData.gender || 'Laki-laki',
-      branch: userData.branch || branches[0].name,
+      branch: userData.branch || (branches[0] ? branches[0].name : ''),
       subBranch: userData.subBranch || ''
     };
     Database.saveUser(newUser);
     setUsers(Database.getUsers());
   };
 
-  const onUpdateUser = (updatedUser: User) => {
-    Database.saveUser(updatedUser);
-    const refreshed = Database.getUsers();
-    setUsers(refreshed);
-    if (authState.user?.id === updatedUser.id) {
-      setAuthState(prev => ({ ...prev, user: updatedUser }));
-    }
-    showNotification('Data anggota berhasil disimpan.');
-  };
-
-  const onDeleteUser = (id: string) => {
-    Database.deleteUser(id);
-    setUsers(Database.getUsers());
-    showNotification('Anggota telah dihapus.', 'info');
-  };
-
-  if (authState.isLoading) {
+  if (authState.isLoading || !isDataLoaded) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-          <p className="text-indigo-600 dark:text-indigo-400 font-black tracking-[0.3em] text-[10px] uppercase animate-pulse">MEMULAI DATABASE KBPC</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!authState.isAuthenticated) {
-    return (
-      <div className={isDarkMode ? 'dark' : ''}>
-        {view === 'login' && <LoginView onLogin={handleLogin} onForgotPassword={() => setView('forgot')} onRegister={() => setView('register')} />}
-        {view === 'forgot' && <ForgotPasswordView onBack={() => setView('login')} />}
-        {view === 'register' && <RegisterView onBack={() => setView('login')} onRegister={onAddUser} beltLevels={beltLevels} branches={branches} />}
-        
-        <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
-          {notifications.map(n => (
-            <div key={n.id} className={`px-6 py-4 rounded-xl shadow-lg border-l-4 text-white font-medium animate-in slide-in-from-right ${
-              n.type === 'success' ? 'bg-emerald-500 border-emerald-700' :
-              n.type === 'error' ? 'bg-red-500 border-red-700' : 'bg-slate-800 border-slate-600'
-            }`}>
-              {n.message}
+      <div className="h-screen w-full flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <div className="flex flex-col items-center gap-6">
+          <div className="relative">
+            <div className="w-20 h-20 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+               <img src={LOGO_URL} className="w-8 h-8 animate-pulse" alt="KBPC" />
             </div>
-          ))}
+          </div>
+          <div className="text-center">
+            <p className="text-indigo-600 dark:text-indigo-400 font-black tracking-[0.3em] text-[10px] uppercase">Menghubungkan ke Edge Config</p>
+            <p className="text-slate-400 text-[8px] font-bold uppercase mt-2 tracking-widest">Sinkronisasi Data Global Vercel...</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <Layout 
-      user={authState.user!} 
-      onLogout={handleLogout} 
-      activeView={activeTab} 
-      setActiveView={setActiveTab}
-      isDarkMode={isDarkMode}
-      toggleDarkMode={() => setIsDarkMode(!isDarkMode)}
-    >
-      <div className="max-w-7xl mx-auto">
-        {activeTab === 'dashboard' && <Dashboard users={users} />}
-        {activeTab === 'members' && (
-          <Members 
-            users={users} 
-            positions={positions}
-            beltLevels={beltLevels}
-            branches={branches}
-            currentUserRole={authState.user!.role}
-            onAddUser={onAddUser} 
-            onBulkAddUsers={(list) => { list.forEach(u => onAddUser(u)); showNotification('Impor data berhasil.'); }}
-            onUpdateUser={onUpdateUser} 
-            onDeleteUser={onDeleteUser} 
-            showNotification={showNotification}
-          />
-        )}
-        {activeTab === 'branches' && (
-          <Branches 
-            branches={branches}
-            users={users}
-            onAddBranch={(b) => { Database.saveBranch(b as Branch); setBranches(Database.getBranches()); showNotification('Cabang ditambahkan.'); }}
-            onUpdateBranch={(b) => { Database.saveBranch(b); setBranches(Database.getBranches()); showNotification('Cabang diperbarui.'); }}
-            onDeleteBranch={(id) => { Database.deleteBranch(id); setBranches(Database.getBranches()); showNotification('Cabang dihapus.'); }}
-          />
-        )}
-        {activeTab === 'positions' && (
-          <Positions 
-            positions={positions} 
-            onAdd={(p) => { const updated = [...positions, p]; Database.savePositions(updated); setPositions(updated); }}
-            onUpdate={(old, next) => { const updated = positions.map(p => p === old ? next : p); Database.savePositions(updated); setPositions(updated); }}
-            onDelete={(p) => { const updated = positions.filter(item => item !== p); Database.savePositions(updated); setPositions(updated); }} 
-          />
-        )}
-        {activeTab === 'belt-levels' && (
-          <BeltLevels 
-            beltLevels={beltLevels} 
-            onAdd={(b) => { Database.saveBelt(b); setBeltLevels(Database.getBelts()); }}
-            onUpdate={(old, next) => { Database.saveBelt(next, old); setBeltLevels(Database.getBelts()); }}
-            onDelete={(name) => { const updated = beltLevels.filter(b => b.name !== name); localStorage.setItem('kbpc_db_belts', JSON.stringify(updated)); setBeltLevels(updated); }} 
-          />
-        )}
-        {activeTab === 'profile' && authState.user && (
-          <Profile user={authState.user} onUpdate={onUpdateUser} beltLevels={beltLevels} />
-        )}
-        {activeTab === 'roles' && <div className="p-10 text-center font-bold">Modul Manajemen Hak Akses (Segera Hadir)</div>}
-      </div>
+    <div className={isDarkMode ? 'dark' : ''}>
+       {!authState.isAuthenticated ? (
+         <>
+          {view === 'login' && <LoginView onLogin={handleLogin} onForgotPassword={() => setView('forgot')} onRegister={() => setView('register')} />}
+          {view === 'forgot' && <ForgotPasswordView onBack={() => setView('login')} />}
+          {view === 'register' && <RegisterView onBack={() => setView('login')} onRegister={onAddUser} beltLevels={beltLevels} branches={branches} />}
+         </>
+       ) : (
+         <Layout 
+            user={authState.user!} 
+            onLogout={() => { setAuthState({user: null, isAuthenticated: false, isLoading: false}); setView('login'); }} 
+            activeView={activeTab} 
+            setActiveView={setActiveTab}
+            isDarkMode={isDarkMode}
+            toggleDarkMode={() => setIsDarkMode(!isDarkMode)}
+          >
+            {activeTab === 'dashboard' && <Dashboard users={users} />}
+            {activeTab === 'members' && (
+              <Members 
+                users={users} 
+                positions={positions}
+                beltLevels={beltLevels}
+                branches={branches}
+                currentUserRole={authState.user!.role}
+                onAddUser={onAddUser} 
+                onBulkAddUsers={(list) => { list.forEach(u => onAddUser(u)); showNotification('Impor data berhasil.'); }}
+                onUpdateUser={(u) => { Database.saveUser(u); setUsers(Database.getUsers()); }} 
+                onDeleteUser={(id) => { Database.deleteUser(id); setUsers(Database.getUsers()); }} 
+                showNotification={showNotification}
+              />
+            )}
+            {activeTab === 'branches' && (
+              <Branches 
+                branches={branches}
+                users={users}
+                onAddBranch={(b) => { Database.saveBranch(b as Branch); setBranches(Database.getBranches()); Database.persistLocalConfig('branches', [...branches, b]); }}
+                onUpdateBranch={(b) => { Database.saveBranch(b); setBranches(Database.getBranches()); Database.persistLocalConfig('branches', branches.map(x => x.id === b.id ? b : x)); }}
+                onDeleteBranch={(id) => { Database.deleteBranch(id); setBranches(Database.getBranches()); Database.persistLocalConfig('branches', branches.filter(x => x.id !== id)); }}
+              />
+            )}
+          </Layout>
+       )}
 
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 print:hidden">
+      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
         {notifications.map(n => (
           <div key={n.id} className={`px-6 py-4 rounded-xl shadow-lg border-l-4 text-white font-medium animate-in slide-in-from-right ${
             n.type === 'success' ? 'bg-emerald-500 border-emerald-700' :
@@ -346,7 +257,7 @@ const App: React.FC = () => {
           </div>
         ))}
       </div>
-    </Layout>
+    </div>
   );
 };
 

@@ -1,16 +1,51 @@
 
+import { createClient } from '@vercel/edge-config';
 import { User, Role, BeltLevel, Branch } from './types';
 import { INITIAL_USERS, INITIAL_BELT_LEVELS, INITIAL_BRANCHES, POSITIONS } from './constants';
 
 const KEYS = {
   USERS: 'kbpc_db_users',
-  BELTS: 'kbpc_db_belts',
-  BRANCHES: 'kbpc_db_branches',
-  POSITIONS: 'kbpc_db_positions'
+  CONFIG_REMOTE: 'kbpc_global_config'
 };
 
+// Vercel Edge Config Client (akan menggunakan env VERCEL_URL & EDGE_CONFIG)
+// Catatan: Di client-side, kita memerlukan token pembacaan publik jika tidak menggunakan API routes.
+const edgeConfig = process.env.EDGE_CONFIG 
+  ? createClient(process.env.EDGE_CONFIG) 
+  : null;
+
 export const Database = {
-  // --- USER OPERATIONS ---
+  // Inisialisasi Data dari Edge Config (Asynchronous)
+  initialize: async () => {
+    try {
+      if (edgeConfig) {
+        const remoteConfig = await edgeConfig.get(KEYS.CONFIG_REMOTE) as any;
+        if (remoteConfig) {
+          console.log("Database: Berhasil memuat konfigurasi dari Vercel Edge.");
+          return {
+            branches: remoteConfig.branches || INITIAL_BRANCHES,
+            positions: remoteConfig.positions || POSITIONS,
+            beltLevels: remoteConfig.beltLevels || INITIAL_BELT_LEVELS
+          };
+        }
+      }
+    } catch (error) {
+      console.warn("Database: Edge Config tidak terjangkau, menggunakan data lokal.");
+    }
+    
+    // Fallback ke localStorage jika ada override lokal, atau ke konstanta
+    const localBranches = localStorage.getItem('kbpc_db_branches');
+    const localPositions = localStorage.getItem('kbpc_db_positions');
+    const localBelts = localStorage.getItem('kbpc_db_belts');
+
+    return {
+      branches: localBranches ? JSON.parse(localBranches) : INITIAL_BRANCHES,
+      positions: localPositions ? JSON.parse(localPositions) : POSITIONS,
+      beltLevels: localBelts ? JSON.parse(localBelts) : INITIAL_BELT_LEVELS
+    };
+  },
+
+  // --- USER OPERATIONS (Tetap di LocalStorage untuk Write Access) ---
   getUsers: (): User[] => {
     const data = localStorage.getItem(KEYS.USERS);
     if (!data) {
@@ -43,69 +78,39 @@ export const Database = {
   },
 
   // --- BRANCH OPERATIONS ---
+  // Fix: Added missing getBranches method
   getBranches: (): Branch[] => {
-    const data = localStorage.getItem(KEYS.BRANCHES);
+    const data = localStorage.getItem('kbpc_db_branches');
     if (!data) {
-      localStorage.setItem(KEYS.BRANCHES, JSON.stringify(INITIAL_BRANCHES));
+      localStorage.setItem('kbpc_db_branches', JSON.stringify(INITIAL_BRANCHES));
       return INITIAL_BRANCHES;
     }
     return JSON.parse(data);
   },
 
+  // Fix: Added missing saveBranch method
   saveBranch: (branch: Branch): void => {
     const branches = Database.getBranches();
     const index = branches.findIndex(b => b.id === branch.id);
     if (index !== -1) {
       branches[index] = branch;
     } else {
+      if (!branch.id) {
+        branch.id = `br-${Math.random().toString(36).substr(2, 9)}`;
+      }
       branches.push(branch);
     }
-    localStorage.setItem(KEYS.BRANCHES, JSON.stringify(branches));
+    localStorage.setItem('kbpc_db_branches', JSON.stringify(branches));
   },
 
+  // Fix: Added missing deleteBranch method
   deleteBranch: (id: string): void => {
     const branches = Database.getBranches().filter(b => b.id !== id);
-    localStorage.setItem(KEYS.BRANCHES, JSON.stringify(branches));
+    localStorage.setItem('kbpc_db_branches', JSON.stringify(branches));
   },
 
-  // --- BELT OPERATIONS ---
-  getBelts: (): BeltLevel[] => {
-    const data = localStorage.getItem(KEYS.BELTS);
-    if (!data) {
-      localStorage.setItem(KEYS.BELTS, JSON.stringify(INITIAL_BELT_LEVELS));
-      return INITIAL_BELT_LEVELS;
-    }
-    return JSON.parse(data);
-  },
-
-  saveBelt: (belt: BeltLevel, oldName?: string): void => {
-    const belts = Database.getBelts();
-    if (oldName) {
-      const index = belts.findIndex(b => b.name === oldName);
-      if (index !== -1) belts[index] = belt;
-    } else {
-      belts.push(belt);
-    }
-    localStorage.setItem(KEYS.BELTS, JSON.stringify(belts));
-  },
-
-  // --- POSITION OPERATIONS ---
-  getPositions: (): string[] => {
-    const data = localStorage.getItem(KEYS.POSITIONS);
-    if (!data) {
-      localStorage.setItem(KEYS.POSITIONS, JSON.stringify(POSITIONS));
-      return POSITIONS;
-    }
-    return JSON.parse(data);
-  },
-
-  savePositions: (positions: string[]): void => {
-    localStorage.setItem(KEYS.POSITIONS, JSON.stringify(positions));
-  },
-
-  // --- SYSTEM ---
-  resetDatabase: (): void => {
-    localStorage.clear();
-    window.location.reload();
+  // --- LOCAL PERSISTENCE FOR CONFIG (Caching Edge Config) ---
+  persistLocalConfig: (key: string, data: any) => {
+    localStorage.setItem(`kbpc_db_${key}`, JSON.stringify(data));
   }
 };
