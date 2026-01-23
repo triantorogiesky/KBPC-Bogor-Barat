@@ -11,7 +11,7 @@ import BeltLevels from './views/BeltLevels';
 import Profile from './views/Profile';
 import Branches from './views/Branches';
 
-// --- VIEW COMPONENTS (Login, Forgot, Register) ---
+// --- VIEW COMPONENTS ---
 
 const LoginView: React.FC<{ onLogin: (u: string, p: string) => void; onForgotPassword: () => void; onRegister: () => void }> = ({ onLogin, onForgotPassword, onRegister }) => {
   const [username, setUsername] = useState('admin');
@@ -140,6 +140,11 @@ const App: React.FC = () => {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
+  const refreshData = () => {
+    setUsers(Database.getUsers());
+    setBranches(Database.getBranches());
+  };
+
   useEffect(() => {
     const initApp = async () => {
       const config = await Database.initialize();
@@ -170,7 +175,8 @@ const App: React.FC = () => {
   };
 
   const handleLogin = (username: string, password: string) => {
-    const user = users.find(u => u.username.toLowerCase() === username.toLowerCase() || u.id.toLowerCase() === username.toLowerCase());
+    const allUsers = Database.getUsers();
+    const user = allUsers.find(u => u.username.toLowerCase() === username.toLowerCase() || u.id.toLowerCase() === username.toLowerCase());
     
     if (user) {
       if (user.password && user.password !== password) {
@@ -208,7 +214,33 @@ const App: React.FC = () => {
       subBranch: userData.subBranch || ''
     };
     Database.saveUser(newUser);
-    setUsers(Database.getUsers());
+    refreshData();
+    showNotification('Data Anggota Berhasil Disimpan.', 'success');
+  };
+
+  const handleUpdateUser = (user: User) => {
+    Database.saveUser(user);
+    refreshData();
+    // Update current logged in user if they updated their own profile
+    if (authState.user?.id === user.id) {
+        setAuthState(prev => ({ ...prev, user }));
+    }
+    showNotification('Perubahan Berhasil Disimpan.', 'success');
+  };
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      if (Database.importDatabase(result)) {
+        window.location.reload(); // Refresh total untuk memuat ulang semua data baru
+      } else {
+        showNotification('Gagal mengimpor database.', 'error');
+      }
+    };
+    reader.readAsText(file);
   };
 
   if (authState.isLoading || !isDataLoaded) {
@@ -222,8 +254,8 @@ const App: React.FC = () => {
             </div>
           </div>
           <div className="text-center">
-            <p className="text-indigo-600 dark:text-indigo-400 font-black tracking-[0.3em] text-[10px] uppercase">MENGHUBUNGKAN KE CLOUD</p>
-            <p className="text-slate-400 text-[8px] font-bold uppercase mt-2 tracking-widest">Sinkronisasi Database Vercel Edge...</p>
+            <p className="text-indigo-600 dark:text-indigo-400 font-black tracking-[0.3em] text-[10px] uppercase">MEMUAT DATABASE</p>
+            <p className="text-slate-400 text-[8px] font-bold uppercase mt-2 tracking-widest">Inisialisasi Persistence Layer...</p>
           </div>
         </div>
       </div>
@@ -247,7 +279,24 @@ const App: React.FC = () => {
             isDarkMode={isDarkMode}
             toggleDarkMode={() => setIsDarkMode(!isDarkMode)}
           >
-            {activeTab === 'dashboard' && <Dashboard users={users} />}
+            {activeTab === 'dashboard' && (
+                <div className="space-y-6">
+                    <Dashboard users={users} />
+                    {authState.user?.role === Role.ADMIN && (
+                        <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm mt-8">
+                            <h3 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-tighter mb-4">Database Management</h3>
+                            <div className="flex flex-wrap gap-4">
+                                <button onClick={Database.exportDatabase} className="px-6 py-3 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700">Ekspor JSON (Backup)</button>
+                                <label className="px-6 py-3 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 cursor-pointer">
+                                    Impor JSON (Restore)
+                                    <input type="file" className="hidden" accept=".json" onChange={handleImport} />
+                                </label>
+                            </div>
+                            <p className="text-[10px] text-slate-400 mt-4 uppercase font-bold tracking-widest">⚠️ PENTING: Gunakan fitur ini untuk memindahkan data antar perangkat atau browser.</p>
+                        </div>
+                    )}
+                </div>
+            )}
             {activeTab === 'members' && (
               <Members 
                 users={users} 
@@ -256,9 +305,9 @@ const App: React.FC = () => {
                 branches={branches}
                 currentUserRole={authState.user!.role}
                 onAddUser={onAddUser} 
-                onBulkAddUsers={(list) => { list.forEach(u => onAddUser(u)); showNotification('Impor data berhasil.'); }}
-                onUpdateUser={(u) => { Database.saveUser(u); setUsers(Database.getUsers()); }} 
-                onDeleteUser={(id) => { Database.deleteUser(id); setUsers(Database.getUsers()); }} 
+                onBulkAddUsers={(list) => { list.forEach(u => onAddUser(u)); refreshData(); showNotification('Impor data berhasil.'); }}
+                onUpdateUser={handleUpdateUser} 
+                onDeleteUser={(id) => { Database.deleteUser(id); refreshData(); showNotification('Anggota berhasil dihapus.'); }} 
                 showNotification={showNotification}
               />
             )}
@@ -266,29 +315,29 @@ const App: React.FC = () => {
               <Branches 
                 branches={branches}
                 users={users}
-                onAddBranch={(b) => { Database.saveBranch(b as Branch); setBranches(Database.getBranches()); }}
-                onUpdateBranch={(b) => { Database.saveBranch(b); setBranches(Database.getBranches()); }}
-                onDeleteBranch={(id) => { Database.deleteBranch(id); setBranches(Database.getBranches()); }}
+                onAddBranch={(b) => { Database.saveBranch(b as Branch); refreshData(); showNotification('Cabang ditambahkan.'); }}
+                onUpdateBranch={(b) => { Database.saveBranch(b); refreshData(); showNotification('Cabang diperbarui.'); }}
+                onDeleteBranch={(id) => { Database.deleteBranch(id); refreshData(); showNotification('Cabang dihapus.'); }}
               />
             )}
             {activeTab === 'positions' && (
               <Positions 
                 positions={positions} 
-                onAdd={(p) => { const updated = [...positions, p]; Database.savePositions(updated); setPositions(updated); }}
-                onUpdate={(old, next) => { const updated = positions.map(p => p === old ? next : p); Database.savePositions(updated); setPositions(updated); }}
-                onDelete={(p) => { const updated = positions.filter(item => item !== p); Database.savePositions(updated); setPositions(updated); }} 
+                onAdd={(p) => { const updated = [...positions, p]; Database.savePositions(updated); setPositions(updated); showNotification('Jabatan ditambahkan.'); }}
+                onUpdate={(old, next) => { const updated = positions.map(p => p === old ? next : p); Database.savePositions(updated); setPositions(updated); showNotification('Jabatan diperbarui.'); }}
+                onDelete={(p) => { const updated = positions.filter(item => item !== p); Database.savePositions(updated); setPositions(updated); showNotification('Jabatan dihapus.'); }} 
               />
             )}
             {activeTab === 'belt-levels' && (
               <BeltLevels 
                 beltLevels={beltLevels} 
-                onAdd={(b) => { const updated = [...beltLevels, b]; Database.saveBeltLevels(updated); setBeltLevels(updated); }}
-                onUpdate={(old, next) => { const updated = beltLevels.map(b => b.name === old ? next : b); Database.saveBeltLevels(updated); setBeltLevels(updated); }}
-                onDelete={(name) => { const updated = beltLevels.filter(b => b.name !== name); Database.saveBeltLevels(updated); setBeltLevels(updated); }} 
+                onAdd={(b) => { const updated = [...beltLevels, b]; Database.saveBeltLevels(updated); setBeltLevels(updated); showNotification('Tingkat sabuk ditambahkan.'); }}
+                onUpdate={(old, next) => { const updated = beltLevels.map(b => b.name === old ? next : b); Database.saveBeltLevels(updated); setBeltLevels(updated); showNotification('Tingkat sabuk diperbarui.'); }}
+                onDelete={(name) => { const updated = beltLevels.filter(b => b.name !== name); Database.saveBeltLevels(updated); setBeltLevels(updated); showNotification('Tingkat sabuk dihapus.'); }} 
               />
             )}
             {activeTab === 'profile' && authState.user && (
-              <Profile user={authState.user} onUpdate={(u) => { Database.saveUser(u); setUsers(Database.getUsers()); setAuthState(prev => ({ ...prev, user: u })); showNotification('Profil diperbarui.'); }} beltLevels={beltLevels} />
+              <Profile user={authState.user} onUpdate={handleUpdateUser} beltLevels={beltLevels} />
             )}
           </Layout>
        )}

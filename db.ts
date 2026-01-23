@@ -4,25 +4,33 @@ import { User, Role, BeltLevel, Branch } from './types';
 import { INITIAL_USERS, INITIAL_BELT_LEVELS, INITIAL_BRANCHES, POSITIONS } from './constants';
 
 const KEYS = {
-  USERS: 'kbpc_db_users',
-  BRANCHES: 'kbpc_db_branches',
-  POSITIONS: 'kbpc_db_positions',
-  BELTS: 'kbpc_db_belts',
+  USERS: 'kbpc_db_users_v2', // Versi 2 untuk menghindari konflik data lama
+  BRANCHES: 'kbpc_db_branches_v2',
+  POSITIONS: 'kbpc_db_positions_v2',
+  BELTS: 'kbpc_db_belts_v2',
   CONFIG_REMOTE: 'kbpc_global_config'
 };
 
-// Helper untuk LocalStorage
 const storage = {
   get: <T>(key: string, defaultValue: T): T => {
     try {
       const item = localStorage.getItem(key);
-      return item ? JSON.parse(item) : defaultValue;
-    } catch {
+      if (!item) return defaultValue;
+      return JSON.parse(item);
+    } catch (e) {
+      console.error(`Gagal memuat key ${key}:`, e);
       return defaultValue;
     }
   },
-  set: (key: string, value: any): void => {
-    localStorage.setItem(key, JSON.stringify(value));
+  set: (key: string, value: any): boolean => {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+      return true;
+    } catch (e) {
+      console.error(`Gagal menyimpan key ${key}:`, e);
+      alert("Penyimpanan Gagal! Memori browser mungkin penuh.");
+      return false;
+    }
   }
 };
 
@@ -31,10 +39,8 @@ const edgeConfig = process.env.EDGE_CONFIG
   : null;
 
 export const Database = {
-  // --- INITIALIZATION ---
   initialize: async () => {
-    // Simulasi latency jaringan
-    await new Promise(resolve => setTimeout(resolve, 1200));
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     let remoteConfig: any = null;
     try {
@@ -42,32 +48,42 @@ export const Database = {
         remoteConfig = await edgeConfig.get(KEYS.CONFIG_REMOTE);
       }
     } catch (error) {
-      console.warn("Database: Edge Config unavailable, using local persistence.");
+      console.warn("Database: Edge Config tidak terjangkau.");
     }
 
-    // Ambil data dengan hierarki: 1. Remote Edge, 2. Local Storage, 3. Initial Constants
-    const branches = remoteConfig?.branches || storage.get(KEYS.BRANCHES, INITIAL_BRANCHES);
-    const positions = remoteConfig?.positions || storage.get(KEYS.POSITIONS, POSITIONS);
-    const beltLevels = remoteConfig?.beltLevels || storage.get(KEYS.BELTS, INITIAL_BELT_LEVELS);
-    const users = storage.get(KEYS.USERS, INITIAL_USERS);
+    // Ambil data lokal terlebih dahulu (karena ini yang mengandung perubahan user)
+    const localUsers = storage.get<User[]>(KEYS.USERS, []);
+    const localBranches = storage.get<Branch[]>(KEYS.BRANCHES, []);
+    const localPositions = storage.get<string[]>(KEYS.POSITIONS, []);
+    const localBelts = storage.get<BeltLevel[]>(KEYS.BELTS, []);
 
-    // Pastikan data tersimpan di local untuk sesi berikutnya
-    storage.set(KEYS.BRANCHES, branches);
-    storage.set(KEYS.POSITIONS, positions);
-    storage.set(KEYS.BELTS, beltLevels);
-    storage.set(KEYS.USERS, users);
+    // Jika data lokal kosong, baru gunakan remote atau konstanta awal
+    const finalUsers = localUsers.length > 0 ? localUsers : INITIAL_USERS;
+    const finalBranches = localBranches.length > 0 ? localBranches : (remoteConfig?.branches || INITIAL_BRANCHES);
+    const finalPositions = localPositions.length > 0 ? localPositions : (remoteConfig?.positions || POSITIONS);
+    const finalBelts = localBelts.length > 0 ? localBelts : (remoteConfig?.beltLevels || INITIAL_BELT_LEVELS);
 
-    return { branches, positions, beltLevels, users };
+    // Sync balik ke storage untuk memastikan integritas
+    storage.set(KEYS.USERS, finalUsers);
+    storage.set(KEYS.BRANCHES, finalBranches);
+    storage.set(KEYS.POSITIONS, finalPositions);
+    storage.set(KEYS.BELTS, finalBelts);
+
+    return { 
+      branches: finalBranches, 
+      positions: finalPositions, 
+      beltLevels: finalBelts, 
+      users: finalUsers 
+    };
   },
 
-  // --- USER OPERATIONS ---
   getUsers: (): User[] => storage.get(KEYS.USERS, INITIAL_USERS),
 
   saveUser: (user: User): void => {
     const users = Database.getUsers();
     const index = users.findIndex(u => u.id === user.id);
     if (index !== -1) {
-      users[index] = user;
+      users[index] = { ...users[index], ...user }; // Merge data
     } else {
       users.push(user);
     }
@@ -81,11 +97,11 @@ export const Database = {
 
   generateNIA: (): string => {
     const year = new Date().getFullYear();
-    const count = Database.getUsers().length + 1;
+    const allUsers = Database.getUsers();
+    const count = allUsers.length + 1;
     return `NIA-${year}-${count.toString().padStart(4, '0')}`;
   },
 
-  // --- BRANCH OPERATIONS ---
   getBranches: (): Branch[] => storage.get(KEYS.BRANCHES, INITIAL_BRANCHES),
 
   saveBranch: (branch: Branch): void => {
@@ -105,7 +121,6 @@ export const Database = {
     storage.set(KEYS.BRANCHES, branches);
   },
 
-  // --- CONFIG PERSISTENCE (POSITIONS & BELTS) ---
   savePositions: (positions: string[]): void => {
     storage.set(KEYS.POSITIONS, positions);
   },
@@ -114,12 +129,34 @@ export const Database = {
     storage.set(KEYS.BELTS, belts);
   },
 
-  // Utility untuk sinkronisasi (Manual Sync)
-  persistLocalConfig: (key: string, data: any) => {
-    const storageKey = 
-      key === 'branches' ? KEYS.BRANCHES :
-      key === 'positions' ? KEYS.POSITIONS :
-      key === 'belt-levels' ? KEYS.BELTS : `kbpc_db_${key}`;
-    storage.set(storageKey, data);
+  // Fitur Backup untuk solusi Cloud Manual
+  exportDatabase: () => {
+    const data = {
+      users: Database.getUsers(),
+      branches: Database.getBranches(),
+      positions: storage.get(KEYS.POSITIONS, POSITIONS),
+      belts: storage.get(KEYS.BELTS, INITIAL_BELT_LEVELS),
+      exportDate: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `backup_kbpc_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+  },
+
+  importDatabase: (jsonString: string): boolean => {
+    try {
+      const data = JSON.parse(jsonString);
+      if (data.users) storage.set(KEYS.USERS, data.users);
+      if (data.branches) storage.set(KEYS.BRANCHES, data.branches);
+      if (data.positions) storage.set(KEYS.POSITIONS, data.positions);
+      if (data.belts) storage.set(KEYS.BELTS, data.belts);
+      return true;
+    } catch (e) {
+      console.error("Gagal impor database:", e);
+      return false;
+    }
   }
 };

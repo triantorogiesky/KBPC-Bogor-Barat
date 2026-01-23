@@ -179,8 +179,8 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, activeView, s
 
           <div className="flex items-center gap-6">
             <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-full">
-              <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-              <span className="text-[9px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">System Online</span>
+              <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
+              <span className="text-[9px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">Storage: Local Browser</span>
             </div>
             <div className="flex items-center gap-3">
               <button
