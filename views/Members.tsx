@@ -706,7 +706,7 @@ const Members: React.FC<MembersProps> = ({
                         </div>
                         <div className="flex items-center justify-between">
                           <label className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Status Pelatih</label>
-                          <input type="checkbox" className="w-6 h-6 accent-amber-500 rounded-lg cursor-pointer" checked={formUser.isCoach} onChange={e => setFormUser({...formUser, isCoach: e.checked})} />
+                          <input type="checkbox" className="w-6 h-6 accent-amber-500 rounded-lg cursor-pointer" checked={formUser.isCoach} onChange={e => setFormUser({...formUser, isCoach: e.target.checked})} />
                         </div>
                       </div>
                     )}

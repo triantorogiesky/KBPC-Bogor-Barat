@@ -87,7 +87,6 @@ const App: React.FC = () => {
   };
 
   const onAddUser = (userData: Partial<User>) => {
-    // PROTEKSI HAK AKSES
     if (auth.user?.role !== Role.ADMIN && auth.user?.role !== Role.PENGURUS) {
       showNotification('Anda tidak memiliki akses untuk menambah anggota.', 'error');
       return;
@@ -124,7 +123,6 @@ const App: React.FC = () => {
   };
 
   const onUpdateUser = (updatedUser: User, oldId?: string) => {
-    // PROTEKSI HAK AKSES
     const isEditingSelf = auth.user?.id === (oldId || updatedUser.id);
     const isAdmin = auth.user?.role === Role.ADMIN;
     const isPengurus = auth.user?.role === Role.PENGURUS;
@@ -147,7 +145,6 @@ const App: React.FC = () => {
   };
 
   const onDeleteUser = (id: string) => {
-    // PROTEKSI HAK AKSES: Hanya ADMIN yang boleh menghapus
     if (auth.user?.role !== Role.ADMIN) {
       showNotification('Hanya Administrator yang dapat menghapus data.', 'error');
       return;
@@ -159,7 +156,6 @@ const App: React.FC = () => {
   };
 
   const onBulkAddUsers = (usersToImport: Partial<User>[]) => {
-    // PROTEKSI HAK AKSES: Hanya ADMIN yang boleh impor massal
     if (auth.user?.role !== Role.ADMIN) {
       showNotification('Hanya Administrator yang dapat melakukan impor data.', 'error');
       return;
