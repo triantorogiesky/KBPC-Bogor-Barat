@@ -171,7 +171,7 @@ const App: React.FC = () => {
   const showNotification = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     const id = Math.random().toString(36).substr(2, 9);
     setNotifications(prev => [...prev, { id, message, type }]);
-    setTimeout(() => setNotifications(prev => prev.filter(n => n.id !== id)), 3000);
+    setTimeout(() => setNotifications(prev => prev.filter(n => n.id !== id)), 4000);
   };
 
   const handleLogin = (username: string, password: string) => {
@@ -213,19 +213,26 @@ const App: React.FC = () => {
       branch: userData.branch || (branches[0]?.name || ''),
       subBranch: userData.subBranch || ''
     };
-    Database.saveUser(newUser);
-    refreshData();
-    showNotification('Data Anggota Berhasil Disimpan.', 'success');
+    const success = Database.saveUser(newUser);
+    if (success) {
+      refreshData();
+      showNotification('Data Anggota Berhasil Disimpan.', 'success');
+    } else {
+      showNotification('Penyimpanan Gagal! Memori browser penuh. Hapus foto lama atau gunakan file lebih kecil.', 'error');
+    }
   };
 
   const handleUpdateUser = (user: User) => {
-    Database.saveUser(user);
-    refreshData();
-    // Update current logged in user if they updated their own profile
-    if (authState.user?.id === user.id) {
-        setAuthState(prev => ({ ...prev, user }));
+    const success = Database.saveUser(user);
+    if (success) {
+      refreshData();
+      if (authState.user?.id === user.id) {
+          setAuthState(prev => ({ ...prev, user }));
+      }
+      showNotification('Perubahan Berhasil Disimpan.', 'success');
+    } else {
+      showNotification('Gagal Menyimpan! Data terlalu besar (mungkin karena resolusi foto terlalu tinggi).', 'error');
     }
-    showNotification('Perubahan Berhasil Disimpan.', 'success');
   };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -235,7 +242,7 @@ const App: React.FC = () => {
     reader.onload = (event) => {
       const result = event.target?.result as string;
       if (Database.importDatabase(result)) {
-        window.location.reload(); // Refresh total untuk memuat ulang semua data baru
+        window.location.reload();
       } else {
         showNotification('Gagal mengimpor database.', 'error');
       }

@@ -1,6 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { User, BeltLevel } from '../types';
+import { compressImage } from '../utils';
 
 interface ProfileProps {
   user: User;
@@ -12,6 +13,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdate, beltLevels }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<User>({ ...user });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isProcessing, setIsProcessing] = useState(false);
   
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const formalInputRef = useRef<HTMLInputElement>(null);
@@ -47,12 +49,21 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdate, beltLevels }) => {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'avatar' | 'formalPhoto' | 'informalPhoto') => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, field: 'avatar' | 'formalPhoto' | 'informalPhoto') => {
     const file = e.target.files?.[0];
     if (file) {
+      setIsProcessing(true);
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, [field]: reader.result as string }));
+      reader.onloadend = async () => {
+        const result = reader.result as string;
+        try {
+          const compressed = await compressImage(result);
+          setFormData(prev => ({ ...prev, [field]: compressed }));
+        } catch (err) {
+          setFormData(prev => ({ ...prev, [field]: result }));
+        } finally {
+          setIsProcessing(false);
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -74,7 +85,6 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdate, beltLevels }) => {
   return (
     <div className="max-w-6xl mx-auto animate-in slide-in-from-bottom-8 duration-700 space-y-8 pb-20">
       <div className="bg-white dark:bg-slate-800 rounded-[3rem] border border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden">
-        {/* Cover Header */}
         <div className="h-56 bg-gradient-to-r from-indigo-600 to-indigo-800 relative">
           <div className="absolute inset-0 bg-black/10"></div>
           {formData.isCoach && (
@@ -85,23 +95,23 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdate, beltLevels }) => {
         </div>
 
         <div className="px-12 pb-12">
-          {/* Avatar & Action Section */}
           <div className="relative -mt-24 flex flex-col md:flex-row justify-between items-center md:items-end mb-12 gap-8">
             <div className="relative group">
-              <div className="relative overflow-hidden rounded-[3rem] border-[12px] border-white dark:border-slate-800 shadow-2xl bg-slate-100 dark:bg-slate-700 w-48 h-48">
+              <div className={`relative overflow-hidden rounded-[3rem] border-[12px] border-white dark:border-slate-800 shadow-2xl bg-slate-100 dark:bg-slate-700 w-48 h-48 ${isProcessing ? 'animate-pulse' : ''}`}>
                 <img 
                   src={formData.avatar || `https://ui-avatars.com/api/?name=${formData.name}&background=6366f1&color=fff`} 
                   className="w-full h-full object-cover" 
                   alt="Profile" 
                 />
-                {isEditing && (
+                {(isEditing || isProcessing) && (
                   <button 
-                    onClick={() => avatarInputRef.current?.click()} 
+                    onClick={() => !isProcessing && avatarInputRef.current?.click()} 
                     className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all text-white"
                     type="button"
+                    disabled={isProcessing}
                   >
-                    <span className="text-3xl mb-1">📸</span>
-                    <span className="text-[10px] font-black uppercase tracking-widest">Ganti Avatar</span>
+                    <span className="text-3xl mb-1">{isProcessing ? '⏳' : '📸'}</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest">{isProcessing ? 'COMPRESSING...' : 'Ganti Avatar'}</span>
                   </button>
                 )}
               </div>
@@ -126,9 +136,10 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdate, beltLevels }) => {
                   </button>
                   <button 
                     onClick={handleSave} 
-                    className="px-10 py-4 bg-emerald-600 text-white rounded-2xl font-black hover:bg-emerald-700 transition-all shadow-2xl shadow-emerald-500/40 active:scale-95 uppercase tracking-widest text-xs"
+                    disabled={isProcessing}
+                    className="px-10 py-4 bg-emerald-600 disabled:bg-slate-400 text-white rounded-2xl font-black hover:bg-emerald-700 transition-all shadow-2xl shadow-emerald-500/40 active:scale-95 uppercase tracking-widest text-xs"
                   >
-                    Simpan Perubahan
+                    {isProcessing ? 'MEMPROSES...' : 'Simpan Perubahan'}
                   </button>
                 </div>
               )}
@@ -136,7 +147,6 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdate, beltLevels }) => {
           </div>
 
           {!isEditing ? (
-            /* VIEW MODE */
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
               <div className="lg:col-span-5 space-y-10">
                 <div className="space-y-4">
@@ -184,38 +194,17 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdate, beltLevels }) => {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                  {/* Formal Photo Box */}
                   <div className="space-y-4">
                     <div className="aspect-[3/4] rounded-[2.5rem] overflow-hidden bg-slate-100 dark:bg-slate-700 border-4 border-white dark:border-slate-800 shadow-2xl group relative transition-transform hover:scale-[1.02]">
-                      {user.formalPhoto ? (
-                        <img src={user.formalPhoto} className="w-full h-full object-cover" alt="Foto Formal" />
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-3 grayscale opacity-40">
-                          <span className="text-6xl">🥋</span>
-                          <p className="text-[10px] font-black uppercase tracking-widest">Belum Ada Foto Formal</p>
-                        </div>
-                      )}
-                      <div className="absolute bottom-0 inset-x-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
-                        <p className="text-white text-[11px] font-black uppercase text-center tracking-[0.2em]">Foto Formal</p>
-                      </div>
+                      {user.formalPhoto ? <img src={user.formalPhoto} className="w-full h-full object-cover" alt="Foto Formal" /> : <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-3 grayscale opacity-40"><span className="text-6xl">🥋</span><p className="text-[10px] font-black uppercase tracking-widest">Belum Ada Foto Formal</p></div>}
+                      <div className="absolute bottom-0 inset-x-0 p-6 bg-gradient-to-t from-black/80 to-transparent"><p className="text-white text-[11px] font-black uppercase text-center tracking-[0.2em]">Foto Formal</p></div>
                     </div>
                     <p className="text-[10px] text-center font-bold text-slate-400 uppercase tracking-widest italic">Digunakan untuk Sertifikasi/Ijazah</p>
                   </div>
-
-                  {/* Informal Photo Box */}
                   <div className="space-y-4">
                     <div className="aspect-[3/4] rounded-[2.5rem] overflow-hidden bg-slate-100 dark:bg-slate-700 border-4 border-white dark:border-slate-800 shadow-2xl group relative transition-transform hover:scale-[1.02]">
-                      {user.informalPhoto ? (
-                        <img src={user.informalPhoto} className="w-full h-full object-cover" alt="Foto Non-Formal" />
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-3 grayscale opacity-40">
-                          <span className="text-6xl">👕</span>
-                          <p className="text-[10px] font-black uppercase tracking-widest">Belum Ada Foto Bebas</p>
-                        </div>
-                      )}
-                      <div className="absolute bottom-0 inset-x-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
-                        <p className="text-white text-[11px] font-black uppercase text-center tracking-[0.2em]">Foto Non-Formal</p>
-                      </div>
+                      {user.informalPhoto ? <img src={user.informalPhoto} className="w-full h-full object-cover" alt="Foto Non-Formal" /> : <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-3 grayscale opacity-40"><span className="text-6xl">👕</span><p className="text-[10px] font-black uppercase tracking-widest">Belum Ada Foto Bebas</p></div>}
+                      <div className="absolute bottom-0 inset-x-0 p-6 bg-gradient-to-t from-black/80 to-transparent"><p className="text-white text-[11px] font-black uppercase text-center tracking-[0.2em]">Foto Non-Formal</p></div>
                     </div>
                     <p className="text-[10px] text-center font-bold text-slate-400 uppercase tracking-widest italic">Dokumentasi Kegiatan / Bebas</p>
                   </div>
@@ -223,7 +212,6 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdate, beltLevels }) => {
               </div>
             </div>
           ) : (
-            /* EDIT MODE */
             <div className="space-y-12 animate-in fade-in slide-in-from-top-4 duration-500">
               <div className="bg-slate-50 dark:bg-slate-900/40 p-10 rounded-[2.5rem] border border-slate-100 dark:border-slate-700">
                 <h3 className="text-xs font-black text-indigo-600 uppercase tracking-[0.3em] mb-8 flex items-center gap-3">
@@ -232,24 +220,12 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdate, beltLevels }) => {
                 <form onSubmit={handleSave} className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div className="space-y-2">
                       <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Nama Lengkap Sesuai Akta</label>
-                      <input 
-                        required 
-                        type="text" 
-                        className={`w-full px-6 py-4 bg-white dark:bg-slate-800 border ${errors.name ? 'border-red-500' : 'border-slate-200 dark:border-slate-600'} dark:text-white rounded-2xl outline-none font-bold focus:ring-4 focus:ring-indigo-500/10 transition-all`} 
-                        value={formData.name} 
-                        onChange={(e) => handleInputChange('name', e.target.value)} 
-                      />
+                      <input required type="text" className={`w-full px-6 py-4 bg-white dark:bg-slate-800 border ${errors.name ? 'border-red-500' : 'border-slate-200 dark:border-slate-600'} dark:text-white rounded-2xl outline-none font-bold focus:ring-4 focus:ring-indigo-500/10 transition-all`} value={formData.name} onChange={(e) => handleInputChange('name', e.target.value)} />
                       {errors.name && <p className="text-[10px] text-red-500 font-bold uppercase">{errors.name}</p>}
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Alamat Email Aktif</label>
-                      <input 
-                        required 
-                        type="email" 
-                        className={`w-full px-6 py-4 bg-white dark:bg-slate-800 border ${errors.email ? 'border-red-500' : 'border-slate-200 dark:border-slate-600'} dark:text-white rounded-2xl outline-none font-bold focus:ring-4 focus:ring-indigo-500/10 transition-all`} 
-                        value={formData.email} 
-                        onChange={(e) => handleInputChange('email', e.target.value)} 
-                      />
+                      <input required type="email" className={`w-full px-6 py-4 bg-white dark:bg-slate-800 border ${errors.email ? 'border-red-500' : 'border-slate-200 dark:border-slate-600'} dark:text-white rounded-2xl outline-none font-bold focus:ring-4 focus:ring-indigo-500/10 transition-all`} value={formData.email} onChange={(e) => handleInputChange('email', e.target.value)} />
                       {errors.email && <p className="text-[10px] text-red-500 font-bold uppercase">{errors.email}</p>}
                     </div>
                 </form>
@@ -263,18 +239,8 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdate, beltLevels }) => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-10">
                   <div className="space-y-4">
                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Foto Formal (Seragam Lengkap)</p>
-                    <div 
-                      className="aspect-[3/4] rounded-[3rem] overflow-hidden bg-white dark:bg-slate-800 border-4 border-dashed border-slate-200 dark:border-slate-700 relative group cursor-pointer hover:border-indigo-400 transition-all"
-                      onClick={() => formalInputRef.current?.click()}
-                    >
-                      {formData.formalPhoto ? (
-                        <img src={formData.formalPhoto} className="w-full h-full object-cover" alt="Preview Formal" />
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-3">
-                          <span className="text-5xl">🥋</span>
-                          <span className="text-[10px] font-black uppercase tracking-widest text-center px-8">Klik untuk Upload Foto Seragam Lengkap</span>
-                        </div>
-                      )}
+                    <div className={`aspect-[3/4] rounded-[3rem] overflow-hidden bg-white dark:bg-slate-800 border-4 border-dashed border-slate-200 dark:border-slate-700 relative group cursor-pointer hover:border-indigo-400 transition-all ${isProcessing ? 'animate-pulse' : ''}`} onClick={() => !isProcessing && formalInputRef.current?.click()}>
+                      {formData.formalPhoto ? <img src={formData.formalPhoto} className="w-full h-full object-cover" alt="Preview Formal" /> : <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-3"><span className="text-5xl">{isProcessing ? '⏳' : '🥋'}</span><span className="text-[10px] font-black uppercase tracking-widest text-center px-8">{isProcessing ? 'MENGOPTIMALKAN...' : 'Klik untuk Upload Foto Seragam Lengkap'}</span></div>}
                       <div className="absolute inset-0 bg-indigo-600/80 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-all">
                         <span className="text-3xl mb-2">📤</span>
                         <span className="text-[10px] font-black uppercase tracking-widest">Ganti Foto Formal</span>
@@ -285,18 +251,8 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdate, beltLevels }) => {
 
                   <div className="space-y-4">
                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Foto Non-Formal (Bebas / Santai)</p>
-                    <div 
-                      className="aspect-[3/4] rounded-[3rem] overflow-hidden bg-white dark:bg-slate-800 border-4 border-dashed border-slate-200 dark:border-slate-700 relative group cursor-pointer hover:border-indigo-400 transition-all"
-                      onClick={() => informalInputRef.current?.click()}
-                    >
-                      {formData.informalPhoto ? (
-                        <img src={formData.informalPhoto} className="w-full h-full object-cover" alt="Preview Non-Formal" />
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-3">
-                          <span className="text-5xl">📸</span>
-                          <span className="text-[10px] font-black uppercase tracking-widest text-center px-8">Klik untuk Upload Foto Bebas</span>
-                        </div>
-                      )}
+                    <div className={`aspect-[3/4] rounded-[3rem] overflow-hidden bg-white dark:bg-slate-800 border-4 border-dashed border-slate-200 dark:border-slate-700 relative group cursor-pointer hover:border-indigo-400 transition-all ${isProcessing ? 'animate-pulse' : ''}`} onClick={() => !isProcessing && informalInputRef.current?.click()}>
+                      {formData.informalPhoto ? <img src={formData.informalPhoto} className="w-full h-full object-cover" alt="Preview Non-Formal" /> : <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-3"><span className="text-5xl">{isProcessing ? '⏳' : '📸'}</span><span className="text-[10px] font-black uppercase tracking-widest text-center px-8">{isProcessing ? 'MENGOPTIMALKAN...' : 'Klik untuk Upload Foto Bebas'}</span></div>}
                       <div className="absolute inset-0 bg-indigo-600/80 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-all">
                         <span className="text-3xl mb-2">📤</span>
                         <span className="text-[10px] font-black uppercase tracking-widest">Ganti Foto Bebas</span>
@@ -310,9 +266,10 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdate, beltLevels }) => {
               <div className="pt-10 border-t border-slate-100 dark:border-slate-700 flex justify-center">
                 <button 
                   onClick={handleSave} 
-                  className="w-full max-w-2xl py-6 bg-indigo-600 text-white font-black rounded-[2rem] shadow-2xl shadow-indigo-500/40 hover:bg-indigo-700 transition-all active:scale-[0.98] uppercase tracking-[0.2em] text-sm"
+                  disabled={isProcessing}
+                  className="w-full max-w-2xl py-6 bg-indigo-600 disabled:bg-slate-400 text-white font-black rounded-[2rem] shadow-2xl shadow-indigo-500/40 hover:bg-indigo-700 transition-all active:scale-[0.98] uppercase tracking-[0.2em] text-sm"
                 >
-                  Simpan Semua Perubahan Profil
+                  {isProcessing ? 'Tunggu Sebentar...' : 'Simpan Semua Perubahan Profil'}
                 </button>
               </div>
             </div>

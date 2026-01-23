@@ -4,7 +4,7 @@ import { User, Role, BeltLevel, Branch } from './types';
 import { INITIAL_USERS, INITIAL_BELT_LEVELS, INITIAL_BRANCHES, POSITIONS } from './constants';
 
 const KEYS = {
-  USERS: 'kbpc_db_users_v2', // Versi 2 untuk menghindari konflik data lama
+  USERS: 'kbpc_db_users_v2',
   BRANCHES: 'kbpc_db_branches_v2',
   POSITIONS: 'kbpc_db_positions_v2',
   BELTS: 'kbpc_db_belts_v2',
@@ -28,7 +28,6 @@ const storage = {
       return true;
     } catch (e) {
       console.error(`Gagal menyimpan key ${key}:`, e);
-      alert("Penyimpanan Gagal! Memori browser mungkin penuh.");
       return false;
     }
   }
@@ -51,19 +50,16 @@ export const Database = {
       console.warn("Database: Edge Config tidak terjangkau.");
     }
 
-    // Ambil data lokal terlebih dahulu (karena ini yang mengandung perubahan user)
     const localUsers = storage.get<User[]>(KEYS.USERS, []);
     const localBranches = storage.get<Branch[]>(KEYS.BRANCHES, []);
     const localPositions = storage.get<string[]>(KEYS.POSITIONS, []);
     const localBelts = storage.get<BeltLevel[]>(KEYS.BELTS, []);
 
-    // Jika data lokal kosong, baru gunakan remote atau konstanta awal
     const finalUsers = localUsers.length > 0 ? localUsers : INITIAL_USERS;
     const finalBranches = localBranches.length > 0 ? localBranches : (remoteConfig?.branches || INITIAL_BRANCHES);
     const finalPositions = localPositions.length > 0 ? localPositions : (remoteConfig?.positions || POSITIONS);
     const finalBelts = localBelts.length > 0 ? localBelts : (remoteConfig?.beltLevels || INITIAL_BELT_LEVELS);
 
-    // Sync balik ke storage untuk memastikan integritas
     storage.set(KEYS.USERS, finalUsers);
     storage.set(KEYS.BRANCHES, finalBranches);
     storage.set(KEYS.POSITIONS, finalPositions);
@@ -79,15 +75,15 @@ export const Database = {
 
   getUsers: (): User[] => storage.get(KEYS.USERS, INITIAL_USERS),
 
-  saveUser: (user: User): void => {
+  saveUser: (user: User): boolean => {
     const users = Database.getUsers();
     const index = users.findIndex(u => u.id === user.id);
     if (index !== -1) {
-      users[index] = { ...users[index], ...user }; // Merge data
+      users[index] = { ...users[index], ...user };
     } else {
       users.push(user);
     }
-    storage.set(KEYS.USERS, users);
+    return storage.set(KEYS.USERS, users);
   },
 
   deleteUser: (id: string): void => {
@@ -129,7 +125,6 @@ export const Database = {
     storage.set(KEYS.BELTS, belts);
   },
 
-  // Fitur Backup untuk solusi Cloud Manual
   exportDatabase: () => {
     const data = {
       users: Database.getUsers(),

@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useMemo } from 'react';
 import { User, Role, BeltLevel, Branch } from '../types';
+import { compressImage } from '../utils';
 import * as XLSX from 'xlsx';
 
 interface MembersProps {
@@ -28,6 +29,7 @@ const Members: React.FC<MembersProps> = ({
   const [viewingUser, setViewingUser] = useState<User | null>(null);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   
   const [formUser, setFormUser] = useState<Partial<User>>({
     name: '',
@@ -75,12 +77,26 @@ const Members: React.FC<MembersProps> = ({
     closeModal();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'formalPhoto' | 'informalPhoto') => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, field: 'formalPhoto' | 'informalPhoto') => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        showNotification('Ukuran file terlalu besar (Maks 10MB)', 'error');
+        return;
+      }
+
+      setIsUploading(true);
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormUser(prev => ({ ...prev, [field]: reader.result as string }));
+      reader.onloadend = async () => {
+        const result = reader.result as string;
+        try {
+          const compressed = await compressImage(result);
+          setFormUser(prev => ({ ...prev, [field]: compressed }));
+        } catch (err) {
+          setFormUser(prev => ({ ...prev, [field]: result }));
+        } finally {
+          setIsUploading(false);
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -207,7 +223,6 @@ const Members: React.FC<MembersProps> = ({
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      {/* Header View */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
         <div>
           <h1 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">Manajemen Anggota</h1>
@@ -215,18 +230,8 @@ const Members: React.FC<MembersProps> = ({
         </div>
         <div className="flex flex-wrap gap-3">
           <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
-             <button 
-              onClick={() => setViewMode('table')}
-              className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${viewMode === 'table' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400'}`}
-             >
-               List
-             </button>
-             <button 
-              onClick={() => setViewMode('grid')}
-              className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400'}`}
-             >
-               Grid
-             </button>
+             <button onClick={() => setViewMode('table')} className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${viewMode === 'table' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400'}`}>List</button>
+             <button onClick={() => setViewMode('grid')} className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-400'}`}>Grid</button>
           </div>
           <button onClick={() => importInputRef.current?.click()} className="px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold shadow-sm hover:bg-slate-50 transition-all text-sm flex items-center gap-2">
             <span>📊</span> Impor
@@ -241,21 +246,13 @@ const Members: React.FC<MembersProps> = ({
         </div>
       </div>
 
-      {/* Control Bar */}
       <div className="bg-white dark:bg-slate-800 p-4 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col md:flex-row gap-4">
         <div className="flex-1 relative group">
           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-indigo-600 transition-colors">🔍</span>
-          <input
-            type="text"
-            placeholder="Cari anggota berdasarkan nama, jabatan, cabang, NIA, atau sabuk..."
-            className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 dark:text-white rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 text-sm transition-all font-medium"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+          <input type="text" placeholder="Cari anggota berdasarkan nama, jabatan, cabang, NIA, atau sabuk..." className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 dark:text-white rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 text-sm transition-all font-medium" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
         </div>
       </div>
 
-      {/* Main View Area */}
       {viewMode === 'table' ? (
         <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
@@ -278,18 +275,12 @@ const Members: React.FC<MembersProps> = ({
                         <div className="flex items-center gap-4">
                           <div className="relative">
                             <img src={user.avatar} className="w-12 h-12 rounded-2xl border dark:border-slate-700 shadow-sm object-cover" />
-                            {user.isCoach && (
-                                <span className="absolute -top-1 -right-1 bg-amber-500 text-white w-5 h-5 rounded-lg flex items-center justify-center text-[10px] border-2 border-white dark:border-slate-800 shadow-sm" title="Pelatih Terverifikasi">⭐</span>
-                            )}
+                            {user.isCoach && <span className="absolute -top-1 -right-1 bg-amber-500 text-white w-5 h-5 rounded-lg flex items-center justify-center text-[10px] border-2 border-white dark:border-slate-800 shadow-sm" title="Pelatih Terverifikasi">⭐</span>}
                           </div>
                           <div className="min-w-0">
                             <div className="flex items-center gap-2">
-                                <button onClick={() => openDetail(user)} className="text-sm font-black text-slate-800 dark:text-white truncate hover:text-indigo-600 dark:hover:text-indigo-400 text-left block uppercase">
-                                  {user.name}
-                                </button>
-                                {user.isCoach && (
-                                    <span className="px-1.5 py-0.5 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-[8px] font-black rounded border border-amber-200 dark:border-amber-800 uppercase tracking-tighter">PELATIH</span>
-                                )}
+                                <button onClick={() => openDetail(user)} className="text-sm font-black text-slate-800 dark:text-white truncate hover:text-indigo-600 dark:hover:text-indigo-400 text-left block uppercase">{user.name}</button>
+                                {user.isCoach && <span className="px-1.5 py-0.5 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-[8px] font-black rounded border border-amber-200 dark:border-amber-800 uppercase tracking-tighter">PELATIH</span>}
                             </div>
                             <p className="text-[10px] text-indigo-500 dark:text-indigo-400 font-bold uppercase tracking-wider">NIA: {user.id.toUpperCase()}</p>
                           </div>
@@ -313,9 +304,7 @@ const Members: React.FC<MembersProps> = ({
                       <td className="px-6 py-5">
                         <div className="space-y-2">
                           <p className="text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest">{user.position}</p>
-                          <span className={`text-[8px] px-2 py-0.5 rounded-lg font-black uppercase tracking-widest border ${
-                            user.status === 'Active' ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-400' : 'border-amber-200 bg-amber-50 text-amber-700'
-                          }`}>{user.status}</span>
+                          <span className={`text-[8px] px-2 py-0.5 rounded-lg font-black uppercase tracking-widest border ${user.status === 'Active' ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-400' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>{user.status}</span>
                         </div>
                       </td>
                       <td className="px-8 py-5 text-right">
@@ -340,11 +329,7 @@ const Members: React.FC<MembersProps> = ({
                 <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
                    <button onClick={() => openModal(user)} className="w-8 h-8 bg-white dark:bg-slate-700 rounded-lg shadow-md flex items-center justify-center text-sm border dark:border-slate-600">✏️</button>
                 </div>
-                {user.isCoach && (
-                   <div className="absolute top-4 left-4 z-10">
-                      <span className="px-2 py-1 bg-amber-500 text-white text-[8px] font-black rounded-lg shadow-lg border border-amber-400 uppercase tracking-widest">⭐ PELATIH</span>
-                   </div>
-                )}
+                {user.isCoach && <div className="absolute top-4 left-4 z-10"><span className="px-2 py-1 bg-amber-500 text-white text-[8px] font-black rounded-lg shadow-lg border border-amber-400 uppercase tracking-widest">⭐ PELATIH</span></div>}
                 <div className="flex flex-col items-center text-center space-y-4">
                    <img src={user.avatar} className="w-24 h-24 rounded-[2rem] object-cover border-4 border-slate-50 dark:border-slate-700 shadow-xl" />
                    <div>
@@ -366,15 +351,6 @@ const Members: React.FC<MembersProps> = ({
         </div>
       )}
 
-      {/* Empty State */}
-      {filteredUsers.length === 0 && (
-        <div className="p-20 text-center bg-white dark:bg-slate-800 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-700">
-          <div className="text-6xl mb-6 grayscale opacity-20">🔍</div>
-          <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">Anggota Tidak Ditemukan</h3>
-        </div>
-      )}
-
-      {/* --- ADD/EDIT MODAL --- */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-white dark:bg-slate-800 w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-700 animate-in zoom-in-95 duration-300">
@@ -387,7 +363,6 @@ const Members: React.FC<MembersProps> = ({
             </div>
             <form onSubmit={handleSubmit} className="p-8 space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Personal Info */}
                 <div className="space-y-6">
                   <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b pb-2">Informasi Personal</h3>
                   <div className="space-y-4">
@@ -413,23 +388,24 @@ const Members: React.FC<MembersProps> = ({
                       <input required type="email" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-700 border dark:border-slate-600 dark:text-white rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 font-bold" value={formUser.email} onChange={e => setFormUser({...formUser, email: e.target.value})} />
                     </div>
                     
-                    {/* Documentation Photos Upload in Modal */}
                     <div className="grid grid-cols-2 gap-4 pt-4">
                       <div className="space-y-2">
                         <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Foto Formal</label>
-                        <div className="aspect-[3/4] rounded-2xl bg-slate-50 dark:bg-slate-900 border-2 border-dashed border-slate-200 dark:border-slate-700 flex items-center justify-center relative group cursor-pointer overflow-hidden" onClick={() => formalRef.current?.click()}>
+                        <div className={`aspect-[3/4] rounded-2xl bg-slate-50 dark:bg-slate-900 border-2 border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center relative group cursor-pointer overflow-hidden ${isUploading ? 'animate-pulse' : ''}`} onClick={() => formalRef.current?.click()}>
                            {formUser.formalPhoto ? (
                              <img src={formUser.formalPhoto} className="w-full h-full object-cover" />
-                           ) : <span className="text-2xl text-slate-300">📸</span>}
+                           ) : <span className="text-2xl text-slate-300">{isUploading ? '⏳' : '📸'}</span>}
+                           {isUploading && <span className="absolute bottom-2 text-[8px] font-black text-indigo-500 animate-bounce">OPTIMIZING...</span>}
                         </div>
                         <input type="file" ref={formalRef} className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'formalPhoto')} />
                       </div>
                       <div className="space-y-2">
                         <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Foto Bebas</label>
-                        <div className="aspect-[3/4] rounded-2xl bg-slate-50 dark:bg-slate-900 border-2 border-dashed border-slate-200 dark:border-slate-700 flex items-center justify-center relative group cursor-pointer overflow-hidden" onClick={() => informalRef.current?.click()}>
+                        <div className={`aspect-[3/4] rounded-2xl bg-slate-50 dark:bg-slate-900 border-2 border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center relative group cursor-pointer overflow-hidden ${isUploading ? 'animate-pulse' : ''}`} onClick={() => informalRef.current?.click()}>
                            {formUser.informalPhoto ? (
                              <img src={formUser.informalPhoto} className="w-full h-full object-cover" />
-                           ) : <span className="text-2xl text-slate-300">🖼️</span>}
+                           ) : <span className="text-2xl text-slate-300">{isUploading ? '⏳' : '🖼️'}</span>}
+                           {isUploading && <span className="absolute bottom-2 text-[8px] font-black text-indigo-500 animate-bounce">OPTIMIZING...</span>}
                         </div>
                         <input type="file" ref={informalRef} className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'informalPhoto')} />
                       </div>
@@ -447,7 +423,6 @@ const Members: React.FC<MembersProps> = ({
                   </div>
                 </div>
 
-                {/* Organization Info */}
                 <div className="space-y-6">
                   <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b pb-2">Afiliasi Organisasi</h3>
                   <div className="space-y-4">
@@ -504,22 +479,21 @@ const Members: React.FC<MembersProps> = ({
 
               <div className="pt-8 border-t dark:border-slate-700 flex flex-col sm:flex-row gap-4">
                  <button type="button" onClick={closeModal} className="flex-1 py-4 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-black rounded-2xl uppercase tracking-widest text-xs">Batal</button>
-                 <button type="submit" className="flex-[2] py-4 bg-indigo-600 text-white font-black rounded-2xl shadow-xl shadow-indigo-500/30 uppercase tracking-widest text-xs hover:bg-indigo-700 transition-all">Simpan Data Anggota</button>
+                 <button type="submit" disabled={isUploading} className="flex-[2] py-4 bg-indigo-600 disabled:bg-slate-400 text-white font-black rounded-2xl shadow-xl shadow-indigo-500/30 uppercase tracking-widest text-xs hover:bg-indigo-700 transition-all">
+                   {isUploading ? 'Memproses Foto...' : 'Simpan Data Anggota'}
+                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* --- DELETE CONFIRMATION MODAL --- */}
       {isDeleteConfirmOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-300">
            <div className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-700 max-w-sm w-full text-center animate-in zoom-in-95 duration-300">
               <div className="w-20 h-20 bg-red-50 dark:bg-red-900/20 text-red-600 rounded-3xl flex items-center justify-center text-4xl mx-auto mb-6">⚠️</div>
               <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">Konfirmasi Hapus</h2>
-              <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mt-2 leading-relaxed">
-                Apakah Anda yakin ingin menghapus <b>{userToDelete?.name}</b> dari database? Tindakan ini tidak dapat dibatalkan.
-              </p>
+              <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mt-2 leading-relaxed">Apakah Anda yakin ingin menghapus <b>{userToDelete?.name}</b> dari database? Tindakan ini tidak dapat dibatalkan.</p>
               <div className="mt-8 flex flex-col gap-3">
                  <button onClick={handleDelete} className="w-full py-4 bg-red-600 text-white font-black rounded-2xl shadow-lg shadow-red-500/20 uppercase tracking-widest text-xs hover:bg-red-700 transition-all">Hapus Permanen</button>
                  <button onClick={closeModal} className="w-full py-4 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-black rounded-2xl uppercase tracking-widest text-xs">Batal</button>
@@ -528,26 +502,15 @@ const Members: React.FC<MembersProps> = ({
         </div>
       )}
 
-      {/* --- IMPROVED DETAIL VIEW MODAL --- */}
       {isDetailOpen && viewingUser && (() => {
         const style = getBeltStyle(viewingUser.beltLevel);
-        const statusColors = {
-          Active: 'bg-emerald-500',
-          Pending: 'bg-amber-500',
-          Inactive: 'bg-slate-400'
-        };
-
+        const statusColors = { Active: 'bg-emerald-500', Pending: 'bg-amber-500', Inactive: 'bg-slate-400' };
         return (
           <div className="fixed inset-0 z-[65] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-md animate-in fade-in duration-300">
             <div className="bg-white dark:bg-slate-800 w-full max-w-4xl rounded-[3rem] shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-in zoom-in-95 duration-300 max-h-[95vh] overflow-y-auto custom-scrollbar flex flex-col">
-              
-              {/* Profile Header Banner */}
               <div className="h-48 bg-gradient-to-br from-indigo-600 via-indigo-700 to-slate-900 relative shrink-0">
                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
-                <button onClick={closeModal} className="absolute top-6 right-6 w-12 h-12 bg-white/10 hover:bg-white/30 text-white rounded-2xl flex items-center justify-center transition-all z-10 backdrop-blur-md border border-white/20">
-                  <span className="text-xl">✕</span>
-                </button>
-                
+                <button onClick={closeModal} className="absolute top-6 right-6 w-12 h-12 bg-white/10 hover:bg-white/30 text-white rounded-2xl flex items-center justify-center transition-all z-10 backdrop-blur-md border border-white/20"><span className="text-xl">✕</span></button>
                 <div className="absolute -bottom-16 left-12 flex items-end gap-6">
                   <div className="relative">
                     <img src={viewingUser.avatar} className="w-40 h-40 rounded-[3rem] border-[10px] border-white dark:border-slate-800 shadow-2xl object-cover bg-slate-100" />
@@ -558,26 +521,13 @@ const Members: React.FC<MembersProps> = ({
                     <p className="text-indigo-200 font-bold uppercase tracking-[0.2em] text-xs">@{viewingUser.username} • {viewingUser.gender}</p>
                   </div>
                 </div>
-
                 <div className="absolute top-8 left-8 flex flex-wrap gap-2">
-                  {viewingUser.isCoach && (
-                    <div className="px-4 py-1.5 bg-amber-500 text-white text-[10px] font-black rounded-full border border-amber-400 shadow-xl flex items-center gap-2 animate-pulse">
-                      <span>⭐</span> PELATIH TERVERIFIKASI
-                    </div>
-                  )}
-                  <div className={`px-4 py-1.5 text-white text-[10px] font-black rounded-full border border-white/20 shadow-xl flex items-center gap-2 backdrop-blur-md ${statusColors[viewingUser.status]}`}>
-                    {viewingUser.status.toUpperCase()}
-                  </div>
+                  {viewingUser.isCoach && <div className="px-4 py-1.5 bg-amber-500 text-white text-[10px] font-black rounded-full border border-amber-400 shadow-xl flex items-center gap-2 animate-pulse"><span>⭐</span> PELATIH TERVERIFIKASI</div>}
+                  <div className={`px-4 py-1.5 text-white text-[10px] font-black rounded-full border border-white/20 shadow-xl flex items-center gap-2 backdrop-blur-md ${statusColors[viewingUser.status]}`}>{viewingUser.status.toUpperCase()}</div>
                 </div>
               </div>
-
-              {/* Main Data Content */}
               <div className="p-12 pt-24 grid grid-cols-1 lg:grid-cols-12 gap-12">
-                
-                {/* Left Column: Essential Data */}
                 <div className="lg:col-span-7 space-y-10">
-                  
-                  {/* Identity Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="p-6 bg-slate-50 dark:bg-slate-900/40 rounded-[2rem] border border-slate-100 dark:border-slate-700">
                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Nomor Induk Anggota (NIA)</p>
@@ -587,130 +537,63 @@ const Members: React.FC<MembersProps> = ({
                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Tingkat Sabuk</p>
                        <div className="flex items-center gap-3">
                          <div className="w-8 h-3 rounded shadow-sm" style={{ backgroundColor: style.beltColor }}></div>
-                         <p className="text-md font-black text-slate-800 dark:text-white uppercase" style={style.textColor ? { color: style.textColor } : {}}>
-                            {viewingUser.beltLevel}
-                         </p>
+                         <p className="text-md font-black text-slate-800 dark:text-white uppercase" style={style.textColor ? { color: style.textColor } : {}}>{viewingUser.beltLevel}</p>
                        </div>
                        <p className="text-[9px] font-black text-indigo-500 uppercase mt-1">Predikat: {style.predicate}</p>
                     </div>
                   </div>
-
-                  {/* Organization & Meta */}
                   <div className="space-y-4">
-                    <h3 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-[0.3em] flex items-center gap-3">
-                        <span className="w-10 h-[2px] bg-indigo-600"></span> INFORMASI KEANGGOTAAN
-                    </h3>
-                    
+                    <h3 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-[0.3em] flex items-center gap-3"><span className="w-10 h-[2px] bg-indigo-600"></span> INFORMASI KEANGGOTAAN</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                        <div className="p-6 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-3xl shadow-sm flex items-center gap-4">
                           <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-950 rounded-2xl flex items-center justify-center text-2xl">🏢</div>
-                          <div>
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Wilayah / Cabang</p>
-                            <p className="text-sm font-black text-slate-700 dark:text-slate-200 uppercase">{viewingUser.branch}</p>
-                          </div>
+                          <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Wilayah / Cabang</p><p className="text-sm font-black text-slate-700 dark:text-slate-200 uppercase">{viewingUser.branch}</p></div>
                        </div>
                        <div className="p-6 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-3xl shadow-sm flex items-center gap-4">
                           <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-950 rounded-2xl flex items-center justify-center text-2xl">📍</div>
-                          <div>
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Unit / Ranting</p>
-                            <p className="text-sm font-black text-slate-700 dark:text-slate-200 uppercase">{viewingUser.subBranch || 'PUSAT'}</p>
-                          </div>
+                          <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Unit / Ranting</p><p className="text-sm font-black text-slate-700 dark:text-slate-200 uppercase">{viewingUser.subBranch || 'PUSAT'}</p></div>
                        </div>
                        <div className="p-6 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-3xl shadow-sm flex items-center gap-4">
                           <div className="w-12 h-12 bg-amber-50 dark:bg-amber-950 rounded-2xl flex items-center justify-center text-2xl">🏷️</div>
-                          <div>
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Jabatan Struktur</p>
-                            <p className="text-sm font-black text-indigo-600 dark:text-indigo-400 uppercase">{viewingUser.position}</p>
-                          </div>
+                          <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Jabatan Struktur</p><p className="text-sm font-black text-indigo-600 dark:text-indigo-400 uppercase">{viewingUser.position}</p></div>
                        </div>
                        <div className="p-6 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-3xl shadow-sm flex items-center gap-4">
                           <div className="w-12 h-12 bg-purple-50 dark:bg-purple-950 rounded-2xl flex items-center justify-center text-2xl">📅</div>
-                          <div>
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Tanggal Bergabung</p>
-                            <p className="text-sm font-black text-slate-700 dark:text-slate-200 uppercase">{viewingUser.joinDate}</p>
-                          </div>
+                          <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Tanggal Bergabung</p><p className="text-sm font-black text-slate-700 dark:text-slate-200 uppercase">{viewingUser.joinDate}</p></div>
                        </div>
                     </div>
                   </div>
-
-                  {/* Contact Info */}
                   <div className="p-6 bg-indigo-50 dark:bg-indigo-900/10 rounded-[2.5rem] border border-indigo-100 dark:border-indigo-900/30 flex flex-col md:flex-row justify-between items-center gap-4">
                      <div className="flex items-center gap-4">
                         <div className="w-10 h-10 bg-white dark:bg-slate-800 rounded-xl flex items-center justify-center text-lg shadow-sm">✉️</div>
-                        <div>
-                           <p className="text-[8px] font-black text-indigo-400 uppercase tracking-widest">Kontak Email Resmi</p>
-                           <p className="text-sm font-bold text-indigo-800 dark:text-indigo-300">{viewingUser.email}</p>
-                        </div>
+                        <div><p className="text-[8px] font-black text-indigo-400 uppercase tracking-widest">Kontak Email Resmi</p><p className="text-sm font-bold text-indigo-800 dark:text-indigo-300">{viewingUser.email}</p></div>
                      </div>
-                     <button 
-                       onClick={() => { navigator.clipboard.writeText(viewingUser.email); showNotification('Email disalin ke clipboard'); }}
-                       className="px-6 py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/30"
-                     >
-                       Salin Email
-                     </button>
+                     <button onClick={() => { navigator.clipboard.writeText(viewingUser.email); showNotification('Email disalin ke clipboard'); }} className="px-6 py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/30">Salin Email</button>
                   </div>
                 </div>
-
-                {/* Right Column: Photos & Documentation */}
                 <div className="lg:col-span-5 space-y-8">
-                  <h3 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-[0.3em] flex items-center gap-3">
-                        <span className="w-10 h-[2px] bg-indigo-600"></span> DOKUMENTASI PROFIL
-                  </h3>
-                  
+                  <h3 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-[0.3em] flex items-center gap-3"><span className="w-10 h-[2px] bg-indigo-600"></span> DOKUMENTASI PROFIL</h3>
                   <div className="space-y-8">
-                    {/* Formal Photo Box */}
                     <div className="space-y-3">
                       <div className="aspect-[3/4] rounded-[3rem] overflow-hidden bg-slate-100 dark:bg-slate-700 border-8 border-white dark:border-slate-800 shadow-2xl relative group transition-transform hover:scale-[1.02]">
-                        {viewingUser.formalPhoto ? (
-                          <img src={viewingUser.formalPhoto} className="w-full h-full object-cover" alt="Foto Formal" />
-                        ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-2">
-                            <span className="text-6xl opacity-30">🧥</span>
-                            <p className="text-[10px] font-black uppercase tracking-widest opacity-50">Belum Ada Foto Formal</p>
-                          </div>
-                        )}
-                        <div className="absolute bottom-0 inset-x-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
-                          <p className="text-white text-[11px] font-black uppercase text-center tracking-[0.2em]">Foto Formal (Seragam)</p>
-                        </div>
+                        {viewingUser.formalPhoto ? <img src={viewingUser.formalPhoto} className="w-full h-full object-cover" alt="Foto Formal" /> : <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-2"><span className="text-6xl opacity-30">🧥</span><p className="text-[10px] font-black uppercase tracking-widest opacity-50">Belum Ada Foto Formal</p></div>}
+                        <div className="absolute bottom-0 inset-x-0 p-6 bg-gradient-to-t from-black/80 to-transparent"><p className="text-white text-[11px] font-black uppercase text-center tracking-[0.2em]">Foto Formal (Seragam)</p></div>
                       </div>
                       <p className="text-[10px] font-bold text-slate-400 text-center uppercase tracking-widest italic">Dokumentasi Administrasi Ijazah</p>
                     </div>
-
-                    {/* Informal Photo Box */}
                     <div className="space-y-3">
                       <div className="aspect-[3/4] rounded-[3rem] overflow-hidden bg-slate-100 dark:bg-slate-700 border-8 border-white dark:border-slate-800 shadow-2xl relative group transition-transform hover:scale-[1.02]">
-                        {viewingUser.informalPhoto ? (
-                          <img src={viewingUser.informalPhoto} className="w-full h-full object-cover" alt="Foto Non-Formal" />
-                        ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-2">
-                            <span className="text-6xl opacity-30">👕</span>
-                            <p className="text-[10px] font-black uppercase tracking-widest opacity-50">Belum Ada Foto Bebas</p>
-                          </div>
-                        )}
-                        <div className="absolute bottom-0 inset-x-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
-                          <p className="text-white text-[11px] font-black uppercase text-center tracking-[0.2em]">Foto Non-Formal (Bebas)</p>
-                        </div>
+                        {viewingUser.informalPhoto ? <img src={viewingUser.informalPhoto} className="w-full h-full object-cover" alt="Foto Non-Formal" /> : <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-2"><span className="text-6xl opacity-30">👕</span><p className="text-[10px] font-black uppercase tracking-widest opacity-50">Belum Ada Foto Bebas</p></div>}
+                        <div className="absolute bottom-0 inset-x-0 p-6 bg-gradient-to-t from-black/80 to-transparent"><p className="text-white text-[11px] font-black uppercase text-center tracking-[0.2em]">Foto Non-Formal (Bebas)</p></div>
                       </div>
                       <p className="text-[10px] font-bold text-slate-400 text-center uppercase tracking-widest italic">Dokumentasi Arsip Kegiatan</p>
                     </div>
                   </div>
                 </div>
               </div>
-
-              {/* Modal Footer Actions */}
               <div className="p-10 border-t dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex flex-col sm:flex-row gap-4 shrink-0">
-                <button 
-                  onClick={() => { closeModal(); openModal(viewingUser); }} 
-                  className="flex-1 py-5 bg-indigo-600 text-white font-black rounded-2xl uppercase tracking-[0.2em] text-xs shadow-2xl shadow-indigo-500/40 hover:bg-indigo-700 transition-all active:scale-95 flex items-center justify-center gap-3"
-                >
-                  <span>✏️</span> Sunting Profil Lengkap
-                </button>
-                <button 
-                  onClick={closeModal} 
-                  className="px-12 py-5 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-black rounded-2xl uppercase tracking-[0.2em] text-xs border border-slate-200 dark:border-slate-700 hover:bg-slate-50 transition-all"
-                >
-                  Tutup Panel Detail
-                </button>
+                <button onClick={() => { closeModal(); openModal(viewingUser); }} className="flex-1 py-5 bg-indigo-600 text-white font-black rounded-2xl uppercase tracking-[0.2em] text-xs shadow-2xl shadow-indigo-500/40 hover:bg-indigo-700 transition-all active:scale-95 flex items-center justify-center gap-3"><span>✏️</span> Sunting Profil Lengkap</button>
+                <button onClick={closeModal} className="px-12 py-5 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-black rounded-2xl uppercase tracking-[0.2em] text-xs border border-slate-200 dark:border-slate-700 hover:bg-slate-50 transition-all">Tutup Panel Detail</button>
               </div>
             </div>
           </div>
