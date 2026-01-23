@@ -17,33 +17,42 @@ export const INITIAL_BELT_LEVELS: BeltLevel[] = [
   { name: 'Merah Besar', color: '#b91c1c', predicate: 'Guru Besar' }
 ];
 
+export const KECAMATAN = [
+  'Parung',
+  'Ciseeng',
+  'Gunung Sindur',
+  'Rumpin'
+];
+
 export const INITIAL_BRANCHES: Branch[] = [
   {
     id: 'br-001',
+    code: '01',
     name: 'Bogor Barat',
     leader: 'Budi Santoso',
     subBranches: [
-      { id: 'sb-001', name: 'Bubulak', leader: 'Agus' },
-      { id: 'sb-002', name: 'Cifor', leader: 'Sari' },
-      { id: 'sb-003', name: 'Semplak', leader: 'Doni' }
+      { id: 'sb-001', code: '01', name: 'Bubulak', leader: 'Agus' },
+      { id: 'sb-002', code: '02', name: 'Cifor', leader: 'Sari' },
+      { id: 'sb-003', code: '03', name: 'Semplak', leader: 'Doni' }
     ]
   },
   {
     id: 'br-002',
+    code: '02',
     name: 'Bogor Tengah',
     leader: 'Ahmad Fauzi',
     subBranches: [
-      { id: 'sb-004', name: 'Sempur', leader: 'Eka' },
-      { id: 'sb-005', name: 'Pabaton', leader: 'Wati' }
+      { id: 'sb-004', code: '01', name: 'Sempur', leader: 'Eka' },
+      { id: 'sb-005', code: '02', name: 'Pabaton', leader: 'Wati' }
     ]
   }
 ];
 
 export const INITIAL_USERS: User[] = [
   {
-    id: 'admin-001',
+    id: '2024010100000001',
     username: 'admin',
-    password: 'password', // Ditambahkan
+    password: 'marsuah1',
     name: 'Administrator Utama',
     email: 'admin@kbpcbogor.com',
     role: Role.ADMIN,
@@ -57,13 +66,14 @@ export const INITIAL_USERS: User[] = [
     gender: 'Laki-laki',
     branch: 'Bogor Barat',
     subBranch: 'Bubulak',
+    kecamatan: 'Parung',
     formalPhoto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=600&auto=format&fit=crop',
     informalPhoto: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=600&auto=format&fit=crop'
   },
   {
-    id: '1',
+    id: '2024010100000002',
     username: 'budi_s',
-    password: 'password', // Ditambahkan
+    password: 'marsuah1',
     name: 'Budi Santoso',
     email: 'budi@kbpcbogor.com',
     role: Role.ADMIN,
@@ -76,12 +86,13 @@ export const INITIAL_USERS: User[] = [
     predicate: 'Satria Utama',
     gender: 'Laki-laki',
     branch: 'Bogor Barat',
-    subBranch: 'Bubulak'
+    subBranch: 'Bubulak',
+    kecamatan: 'Ciseeng'
   },
   {
-    id: '2',
+    id: '2024010100000003',
     username: 'sari_w',
-    password: 'password', // Ditambahkan
+    password: 'password',
     name: 'Sari Wijaya',
     email: 'sari@kbpcbogor.com',
     role: Role.PENGURUS,
@@ -94,7 +105,8 @@ export const INITIAL_USERS: User[] = [
     predicate: 'Wira Utama',
     gender: 'Perempuan',
     branch: 'Bogor Barat',
-    subBranch: 'Cifor'
+    subBranch: 'Cifor',
+    kecamatan: 'Gunung Sindur'
   }
 ];
 

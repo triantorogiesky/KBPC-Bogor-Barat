@@ -75,9 +75,12 @@ export const Database = {
 
   getUsers: (): User[] => storage.get(KEYS.USERS, INITIAL_USERS),
 
-  saveUser: (user: User): boolean => {
+  saveUser: (user: User, oldId?: string): boolean => {
     const users = Database.getUsers();
-    const index = users.findIndex(u => u.id === user.id);
+    // Use oldId if we are renaming the primary key, otherwise use the current id
+    const searchId = oldId || user.id;
+    const index = users.findIndex(u => u.id === searchId);
+    
     if (index !== -1) {
       users[index] = { ...users[index], ...user };
     } else {
@@ -92,10 +95,16 @@ export const Database = {
   },
 
   generateNIA: (): string => {
-    const year = new Date().getFullYear();
+    const now = new Date();
+    const year = now.getFullYear().toString();
+    const month = (now.getMonth() + 1).toString().padStart(2, '0');
+    const day = now.getDate().toString().padStart(2, '0');
+    const datePrefix = `${year}${month}${day}`; // 8 digits
+    
     const allUsers = Database.getUsers();
-    const count = allUsers.length + 1;
-    return `NIA-${year}-${count.toString().padStart(4, '0')}`;
+    const count = (allUsers.length + 1).toString().padStart(8, '0'); // 8 digits
+    
+    return datePrefix + count; // Total 16 digits numeric string
   },
 
   getBranches: (): Branch[] => storage.get(KEYS.BRANCHES, INITIAL_BRANCHES),

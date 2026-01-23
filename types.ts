@@ -13,12 +13,16 @@ export interface BeltLevel {
 
 export interface SubBranch {
   id: string;
+  code: string; // Kode 2 digit
   name: string;
   leader?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface Branch {
   id: string;
+  code: string; // Kode 2 digit
   name: string;
   leader?: string;
   subBranches: SubBranch[];
@@ -27,7 +31,7 @@ export interface Branch {
 export interface User {
   id: string;
   username: string;
-  password?: string; // Field baru untuk autentikasi
+  password?: string;
   name: string;
   email: string;
   role: Role;
@@ -43,6 +47,7 @@ export interface User {
   gender: 'Laki-laki' | 'Perempuan';
   branch: string;
   subBranch: string;
+  kecamatan: string; // Field baru
 }
 
 export interface AuthState {
